@@ -15,7 +15,7 @@ from .context import WorkError
 def execute(argv, cwd=None):
     try:
         result = subprocess.run(argv, cwd=cwd, stdin=subprocess.DEVNULL,
-                                capture_output=True, text=True, timeout=60, check=False)
+                                capture_output=True, text=True, encoding="utf-8", timeout=60, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise WorkError("Tool unavailable or timed out; verify remote state before retrying a write.") from exc
     if result.returncode:
@@ -40,7 +40,7 @@ class StdioMCP:
             # Installed explicitly by the teammate; no network/package install on a task write.
             self.process = subprocess.Popen(["clickup-rest-mcp"], stdin=subprocess.PIPE,
                                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                                            text=True, bufsize=1)
+                                            text=True, encoding="utf-8", bufsize=1)
         except OSError as exc:
             raise WorkError("Install clickup-rest-mcp==2026.10.15.1 or choose the cup runtime.") from exc
         self.messages = queue.Queue()

@@ -9,7 +9,7 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--client", choices=["claude", "codex", "portable"], required=True)
 p.add_argument("--profile", choices=["default", "official", "context", "rest"], default="default")
 a = p.parse_args()
-config = json.loads((ROOT / "profiles" / (a.profile + ".json")).read_text())
+config = json.loads((ROOT / "profiles" / (a.profile + ".json")).read_text(encoding="utf-8"))
 if a.client == "codex":
     for name, server in config["mcpServers"].items():
         print("[mcp_servers." + name + "]")

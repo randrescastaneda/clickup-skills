@@ -31,7 +31,7 @@ def repository(value):
 
 def git(root, *args):
     result = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
-                            text=True, timeout=10, check=False)
+                            text=True, encoding="utf-8", timeout=10, check=False)
     if result.returncode:
         raise WorkError("Cannot inspect Git repository: " + " ".join(args[:2]))
     return result.stdout.strip()
@@ -122,7 +122,7 @@ class Context:
 
     def state(self):
         path = self.local / "state.json"
-        data = json.loads(path.read_text()) if path.exists() else {}
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
         return data
 
     def save(self, data):

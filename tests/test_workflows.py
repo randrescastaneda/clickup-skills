@@ -74,7 +74,7 @@ class BoundTest(unittest.TestCase):
                                    "--objective", "Verify the data", "--workspace", "100", "--list", "200",
                                    "--task", "root", "--repository", "acme/analysis"])
         dispatch(args)
-        config = json.loads((self.root / ".clickup/project.json").read_text())
+        config = json.loads((self.root / ".clickup/project.json").read_text(encoding="utf-8"))
         config["github"]["status_map"] = {"in_progress": "in progress", "review": "in review", "done": "complete"}
         write_json(self.root / ".clickup/project.json", config)
         self.ctx = Context(self.root)
@@ -163,7 +163,7 @@ class BoundTest(unittest.TestCase):
         pr = self.pr_data()
         def gh(argv, cwd=None):
             if "PATCH" in argv:
-                payload = json.loads(Path(argv[argv.index("--input") + 1]).read_text())
+                payload = json.loads(Path(argv[argv.index("--input") + 1]).read_text(encoding="utf-8"))
                 pr["body"] = payload["body"]
                 return pr
             return copy.deepcopy(pr)
@@ -181,7 +181,7 @@ class BoundTest(unittest.TestCase):
         def gh(argv, cwd=None):
             if "PATCH" in argv:
                 patches.append(argv)
-                pr["body"] = json.loads(Path(argv[-1]).read_text())["body"]
+                pr["body"] = json.loads(Path(argv[-1]).read_text(encoding="utf-8"))["body"]
             return copy.deepcopy(pr)
         self.backend.lose_comment_response = True
         with patch("clickup_skills.workflow.execute", gh):
@@ -225,7 +225,7 @@ class BoundTest(unittest.TestCase):
         seen = []
         def run(argv, cwd=None):
             seen.append(argv)
-            self.assertEqual(Path(argv[-1]).read_text(), "Text `code`\nteam's $value")
+            self.assertEqual(Path(argv[-1]).read_text(encoding="utf-8"), "Text `code`\nteam's $value")
             return {"id": "new"}
         with patch("clickup_skills.backends.execute", run):
             backend.subtask("child", "A; $(unsafe)", "Text `code`\nteam's $value")
@@ -250,6 +250,23 @@ class BoundTest(unittest.TestCase):
         with patch("clickup_skills.backends.execute", return_value={"truncated": True}):
             with self.assertRaisesRegex(WorkError, "marker cannot"):
                 backend.comments("root")
+
+    def test_unicode_binding_state_and_progress_file(self):
+        text = "Análisis de pobreza 数据"
+        config = copy.deepcopy(self.ctx.config)
+        config["objective"] = text
+        (self.root / ".clickup/project.json").write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+        context = Context(self.root)
+        self.assertEqual(context.config["objective"], text)
+        context.save({"note": text})
+        self.assertEqual(context.state()["note"], text)
+        path = self.root / "progress.md"
+        path.write_text(text, encoding="utf-8")
+        args = parser().parse_args(["--project-dir", str(self.root), "progress", "--task", "child",
+                                   "--key", "unicode", "--message-file", str(path)])
+        with patch("clickup_skills.cli.Workflow", return_value=self.work):
+            dispatch(args)
+        self.assertIn(text, self.backend.notes[0]["text"])
 
 
 class RoutingProtocolTest(unittest.TestCase):
@@ -291,7 +308,7 @@ class RoutingProtocolTest(unittest.TestCase):
             {"jsonrpc": "2.0", "method": "notifications/initialized"},
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}]) + '\n'
         process = subprocess.run([sys.executable, "-m", "clickup_skills.cli", "mcp"],
-                                 input=wire, text=True, capture_output=True, check=True)
+                                 input=wire, text=True, encoding="utf-8", capture_output=True, check=True)
         results = [json.loads(line) for line in process.stdout.splitlines()]
         self.assertEqual([r["id"] for r in results], [1, 2])
         self.assertEqual(process.stderr, "")

@@ -103,22 +103,25 @@ def dispatch(args):
                 ctx.save(state)
                 return {"active_task_id": task["id"], "objective": ctx.config["objective"]}
             if args.command == "subtask":
-                return work.subtask(args.title, args.description_file.read_text(), args.key, args.task)
+                return work.subtask(args.title, args.description_file.read_text(encoding="utf-8"), args.key, args.task)
             if args.command == "progress":
-                return work.progress(args.message_file.read_text(), args.key, args.task)
+                return work.progress(args.message_file.read_text(encoding="utf-8"), args.key, args.task)
             if args.command == "link-pr":
                 return work.link_pr(args.pr, args.key, args.task)
             if args.command == "phase":
-                text = args.verification_file.read_text() if args.verification_file else None
+                text = args.verification_file.read_text(encoding="utf-8") if args.verification_file else None
                 return work.phase(args.phase, args.key, args.task, args.pr, text)
             if args.command == "reconcile":
-                result = json.loads(args.result_file.read_text()) if args.result_file else None
+                result = json.loads(args.result_file.read_text(encoding="utf-8")) if args.result_file else None
                 return work.reconcile(args.key, result, args.not_applied)
     finally:
         work.close()
 
 
 def main():
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     try:
         result = dispatch(parser().parse_args())
         if result is not None:
