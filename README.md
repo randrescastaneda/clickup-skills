@@ -15,6 +15,7 @@ This repository supplies the shared workflow, rather than another broad API wrap
 | `cu-work` CLI | Verify task scope, create subtasks, post progress, link PRs, and gate completion |
 | `clickup_work` MCP | The same seven scoped workflow tools for MCP-capable agents |
 | Claude Code marketplace + portable/Codex manifests | Team installation from this repository |
+| Copilot, Kilo, VS Code, and Posit adapters | Render each client's own MCP format from the same profiles |
 | Optional MCP profiles | Official ClickUp, rich-context community MCP, and REST community MCP |
 | GitHub MCP configuration | Host-native GitHub access alongside the workflow tools |
 
@@ -62,9 +63,28 @@ python3 scripts/configure.py --client codex --profile default
 
 Merge the printed TOML into your Codex MCP configuration; the script never edits
 your configuration. Restart/reload the client if needed. The skill installer
-links to this checkout and refuses to overwrite existing skills. Keep the checkout
-available. Clients supporting portable Agent Plugins can install the root
+copies the same five skills and their license, and refuses conflicting or locally
+modified skills. Use `--update` to refresh unmodified managed copies after updating
+this checkout, or opt into `--method link`. Clients supporting portable Agent Plugins can install the root
 `plugin.json`/`mcp.json` package directly.
+
+For GitHub Copilot and Kilo Code:
+
+```bash
+python3 scripts/install_skills.py --client copilot
+python3 scripts/configure.py --client vscode --profile official
+# Copilot CLI / VS Code's Copilot harness has its own config format:
+python3 scripts/configure.py --client copilot --profile official
+
+python3 scripts/install_skills.py --client kilo
+python3 scripts/configure.py --client kilo --profile official
+```
+
+The same skills and executables work with an agent run from VS Code or Positron;
+the agent/client controls discovery and authentication. Posit Assistant has a
+separate MCP settings format (`--client posit`). See the
+[client setup matrix](docs/clients.md) for paths, version differences, and which
+parts have been tested. Configuration checks do not prove installed-client behavior.
 
 ## Bind each working project
 
