@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clickup Handoff"
+  short_description: "Resume and hand off ClickUp work"
+  default_prompt: "Use $clickup-handoff to summarize verified progress and prepare the next session."

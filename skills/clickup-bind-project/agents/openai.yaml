@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clickup Bind Project"
+  short_description: "Bind a project to ClickUp tasks"
+  default_prompt: "Use $clickup-bind-project to connect this repository to a ClickUp project and objective."

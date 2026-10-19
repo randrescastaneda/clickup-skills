@@ -1,0 +1,10 @@
+{
+  "name": "clickup-skills",
+  "version": "0.1.0",
+  "description": "Project-bound ClickUp workflows with CLI/MCP routing and GitHub PR linkage.",
+  "author": {
+    "name": "Andres Castaneda"
+  },
+  "repository": "https://github.com/randrescastaneda/clickup-skills",
+  "license": "MIT"
+}

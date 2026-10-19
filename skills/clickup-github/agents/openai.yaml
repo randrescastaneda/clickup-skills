@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clickup Github"
+  short_description: "Connect ClickUp tasks and GitHub PRs"
+  default_prompt: "Use $clickup-github to connect this task to its pull request and verify its state."

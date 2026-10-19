@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clickup Work Task"
+  short_description: "Work within a bound ClickUp task"
+  default_prompt: "Use $clickup-work-task to implement the active task and keep its progress current."
