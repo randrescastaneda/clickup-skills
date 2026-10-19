@@ -2,22 +2,27 @@
 
 import hashlib
 import json
-import os
 import re
-import tempfile
 
 from .backends import ClickUp, execute
 from .context import WorkError, identifier
+from .github import GitHub
 
 
 def marker(key):
     return "cu-work:" + hashlib.sha256(key.encode()).hexdigest()[:24]
 
 
+def sync_event(parts):
+    encoded = json.dumps(parts, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return "sync:" + hashlib.sha256(encoded).hexdigest()[:32]
+
+
 class Workflow:
-    def __init__(self, context, backend=None):
+    def __init__(self, context, backend=None, github=None):
         self.context = context
         self.backend = backend or ClickUp(context)
+        self.github = github or GitHub(context)
 
     def close(self):
         self.backend.close()
@@ -53,37 +58,84 @@ class Workflow:
         self.context.save(state)
         return {"reused": recovered is not None, "result": result}
 
-    def progress(self, text, key, task_id=None):
-        if not text.strip():
-            raise WorkError("Progress text must not be empty.")
-        task = self.task(task_id)
-        task_id = str(task["id"])
+    def associations(self, task, comments=None):
+        """Remote association markers survive a new teammate checkout or lost receipts."""
+        comments = self.backend.comments(str(task["id"])) if comments is None else comments
+        texts = [task.get("text_content") or task.get("description") or task.get("markdown_description") or ""]
+        texts += [c.get("comment_text", c.get("text", "")) for c in comments]
+        urls = set(re.findall(r"\[cu-work-github:(https://github\.com/[^\s\]]+)\]", "\n".join(texts)))
+        # A repository-only task is valid, but has no issue/PR discussion to mirror.
+        if not urls:
+            return [{"kind": "repository", "url": self.github.url, "number": None}]
+        return [self.github.target(url) for url in sorted(urls)]
+
+    def linked_text(self, text, task_id, targets):
+        return (text.rstrip() + "\n\nClickUp: https://app.clickup.com/t/" + task_id +
+                "\nRepository: " + self.github.url + "\n" +
+                "\n".join("[cu-work-github:" + t["url"] + "]" for t in targets))
+
+    def _comment(self, text, key, task_id, provenance=None):
+        """One ClickUp write; callers supply links and choose whether to mirror."""
         token = marker(self.context.fingerprint + task_id + key)
         body = text.rstrip() + "\n\n[" + token + "]"
         def recover():
             comments = self.backend.comments(task_id)
-            hits = [c for c in comments if token in str(c.get("comment_text", c.get("text", "")))]
+            hits = [c for c in comments if token in str(c.get("comment_text", c.get("text", ""))) or
+                    (provenance and "[cu-work-sync:" + provenance + "]" in str(c.get("comment_text", c.get("text", ""))))]
             if len(hits) > 1:
                 raise WorkError("Multiple remote comments match this operation; inspect them.")
             return {"id": hits[0].get("id"), "task_id": task_id} if hits else None
         return self.once(key, {"operation": "comment", "task_id": task_id, "body": body},
                          lambda: self.backend.comment(task_id, body), recover)
 
-    def subtask(self, title, description, key, task_id=None):
+    def _github_comment(self, target, text, key, task_id, comments=None, provenance=None):
+        token = marker(self.context.fingerprint + task_id + key)
+        body = text.rstrip() + "\n\n[" + token + "]"
+        def recover():
+            notes = self.github.comments(target) if comments is None else comments
+            hits = [c for c in notes if token in c.get("text", "") or
+                    (provenance and "[cu-work-sync:" + provenance + "]" in c.get("text", ""))]
+            if len(hits) > 1:
+                raise WorkError("Multiple GitHub comments match this operation; inspect them.")
+            return {"id": hits[0].get("id"), "url": hits[0].get("url")} if hits else None
+        return self.once(key, {"operation": "github-comment", "task_id": task_id,
+                               "target": target["url"], "body": body},
+                         lambda: self.github.comment(target, body), recover)
+
+    def progress(self, text, key, task_id=None):
+        if not text.strip():
+            raise WorkError("Progress text must not be empty.")
+        task = self.task(task_id)
+        task_id = str(task["id"])
+        targets = self.associations(task)
+        body = self.linked_text(text, task_id, targets)
+        clickup = self._comment(body, key, task_id)
+        mirrored = []
+        for target in targets:
+            if target["kind"] != "repository":
+                mirror_key = marker(key + target["url"]) + ":github"
+                mirrored.append(self._github_comment(target, body, mirror_key, task_id))
+        return {**clickup, "github": mirrored}
+
+    def subtask(self, title, description, key, task_id=None, github_target=None):
         if not title.strip():
             raise WorkError("Subtask title must not be empty.")
         parent = self.task(task_id)
         parent_id = str(parent["id"])
+        self.once(key + ":intent", {"operation": "subtask-intent", "task_id": parent_id,
+                                    "title": title, "description": description, "target": github_target},
+                  lambda: {"accepted": True})
         token = marker(self.context.fingerprint + parent_id + key)
-        body = description.rstrip() + "\n\n[" + token + "]"
+        # Create the GitHub target first: a ClickUp subtask can never be born unlinked.
+        target = self.resolve_target(github_target or "new-issue", title, description,
+                                     key + ":issue", parent_id)
+        body = self.linked_text(description, parent_id, [target]) + "\n\n[" + token + "]"
         def recover():
             children = self.backend.children(parent_id)
             hits = []
             for child in children:
-                if child.get("name") != title:
-                    continue
                 full = self.context.scoped(str(child["id"]), self.backend.get)
-                if token in str(full.get("description", "")) + str(full.get("markdown_description", "")):
+                if token in str(full.get("description", "")) + str(full.get("text_content", "")) + str(full.get("markdown_description", "")):
                     hits.append(full)
             if len(hits) > 1:
                 raise WorkError("Multiple subtasks match this operation; inspect them.")
@@ -94,14 +146,103 @@ class Workflow:
             if str(child.get("parent")) != parent_id:
                 raise WorkError("Created task does not have the expected parent. Reconcile before another write.")
             return {"id": child["id"], "name": child["name"], "url": child.get("url")}
-        return self.once(key, {"operation": "subtask", "task_id": parent_id, "title": title, "body": body},
-                         create, recover)
+        created = self.once(key, {"operation": "subtask", "task_id": parent_id, "title": title, "body": body},
+                            create, recover)
+        child_id = str(created["result"]["id"])
+        backlink = self.link_github(target["url"], marker(key) + ":backlink", child_id)
+        return {**created, "github": target["url"], "backlink": backlink}
+
+    def resolve_target(self, url, title, description, key, task_id):
+        if url != "new-issue":
+            return self.github.target(url)
+        if not title or not title.strip():
+            raise WorkError("Creating a GitHub issue requires a non-empty title.")
+        token = marker(self.context.fingerprint + task_id + key)
+        body = (description.rstrip() + "\n\nClickUp parent: https://app.clickup.com/t/" + task_id +
+                "\nRepository: " + self.github.url + "\n\n[" + token + "]")
+        result = self.once(key, {"operation": "issue-create", "task_id": task_id, "title": title, "body": body},
+                           lambda: self.github.create_issue(title, body), lambda: self.github.find_issue(token))
+        return self.github.target(result["result"]["url"])
+
+    def link_github(self, url, key, task_id=None, title=None, description=""):
+        task = self.task(task_id)
+        task_id = str(task["id"])
+        self.once(key + ":intent", {"operation": "link-intent", "task_id": task_id,
+                                    "target": url, "title": title, "description": description},
+                  lambda: {"accepted": True})
+        target = self.resolve_target(url, title, description, key + ":issue", task_id)
+        if target["kind"] != "repository":
+            self._artifact_backlink(target, task_id, key + ":github")
+        text = self.linked_text("GitHub association recorded. CU-" + task_id, task_id, [target])
+        comment = self._comment(text, key + ":clickup", task_id)
+        return {"target": target["url"], "clickup": comment, "note": "No status was changed."}
+
+    def _artifact_backlink(self, target, task_id, key):
+        start, end = "<!-- clickup-skills:" + task_id + " -->", "<!-- /clickup-skills:" + task_id + " -->"
+        block = (start + "\nClickUp: https://app.clickup.com/t/" + task_id + "\nCU-" + task_id +
+                 "\n\nObjective: " + self.context.config["objective"] + "\n" + end)
+        body = target.get("body") or ""
+        if (body.count(start) != body.count(end) or body.count(start) > 1 or
+                (start in body and body.index(start) > body.index(end))):
+            raise WorkError("Artifact contains malformed or duplicate managed blocks; resolve before linking.")
+        updated = re.sub(re.escape(start) + r".*?" + re.escape(end), lambda _: block, body, flags=re.S) if start in body else body.rstrip() + "\n\n" + block + "\n"
+        def recover():
+            return {"url": target["url"]} if block in self.github.target(target["url"])["body"] else None
+        def apply():
+            if self.github.target(target["url"])["body"] != body:
+                raise WorkError("Artifact body changed concurrently. Re-read and reconcile before retrying.")
+            self.github.set_body(target, updated)
+            result = recover()
+            if result is None:
+                raise WorkError("GitHub backlink was not verified. Reconcile before another write.")
+            return result
+        return self.once(key, {"operation": "artifact-body", "task_id": task_id,
+                               "target": target["url"], "block": block}, apply, recover)
+
+    def sync_comments(self, task_id=None, direction="both"):
+        """Reconcile discussions during a session; never infer status or execute comment text."""
+        if direction not in ("both", "to-clickup", "to-github"):
+            raise WorkError("Choose both, to-clickup, or to-github.")
+        task = self.task(task_id)
+        task_id = str(task["id"])
+        comments = self.backend.comments(task_id)
+        targets = [t for t in self.associations(task, comments) if t["kind"] != "repository"]
+        if not targets:
+            raise WorkError("Link an issue or PR before synchronizing comments; repositories have no task discussion.")
+        results = []
+        for target in targets:
+            notes = self.github.comments(target)
+            if direction in ("both", "to-clickup"):
+                for note in notes:
+                    if "[cu-work:" in note["text"] or "[cu-work-sync:" in note["text"]:
+                        continue
+                    # Hash the content too: edited comments become explicit revisions, never overwrites.
+                    event = sync_event(["github", target["url"], note["id"], note["text"]])
+                    text = ("GitHub comment by " + note.get("author", "unknown") + "\nSource: " + note["url"] +
+                            "\n\n" + note["text"] + "\n\n[cu-work-sync:" + event + "]")
+                    results.append(self._comment(self.linked_text(text, task_id, [target]), event, task_id, event))
+            if direction in ("both", "to-github"):
+                for note in comments:
+                    text = note.get("comment_text", note.get("text", ""))
+                    if not text.strip() or "[cu-work:" in text or "[cu-work-sync:" in text:
+                        continue
+                    if not note.get("id"):
+                        raise WorkError("ClickUp comment is missing its identity; cannot deduplicate safely.")
+                    event = sync_event(["clickup", task_id, str(note["id"]), text, target["url"]])
+                    source = ("ClickUp comment " + str(note["id"]) + " by " +
+                              (note.get("user", {}).get("username", "unknown") if isinstance(note.get("user"), dict)
+                               else str(note.get("user") or "unknown")) + "\n\n" + text +
+                              "\n\n[cu-work-sync:" + event + "]")
+                    results.append(self._github_comment(target, self.linked_text(source, task_id, [target]),
+                                                        event, task_id, notes, event))
+        return {"task_id": task_id, "direction": direction, "operations": results,
+                "note": "Discussion snapshots reconciled. No status changes; no background worker installed."}
 
     def pr(self, number):
         if not str(number).isdigit() or int(number) < 1:
             raise WorkError("Use a positive pull request number in the bound repository.")
         repo = self.context.config["github"]["repository"]
-        data = execute(["gh", "pr", "view", str(number), "--repo", repo, "--json",
+        data = execute(["gh", "pr", "view", str(number), "--repo", "github.com/" + repo, "--json",
                         "url,body,state,headRefOid,statusCheckRollup,isDraft,baseRefName"], self.context.root)
         expected = f"https://github.com/{repo}/pull/{int(number)}"
         if data.get("url", "").lower() != expected.lower():
@@ -111,45 +252,9 @@ class Workflow:
         return data
 
     def link_pr(self, number, key, task_id=None):
-        task = self.task(task_id)
-        task_id = str(task["id"])
-        pr = self.pr(number)
-        repo = self.context.config["github"]["repository"]
-        tag = "clickup-skills:" + task_id
-        start, end = "<!-- " + tag + " -->", "<!-- /" + tag + " -->"
-        block = (start + "\nClickUp: https://app.clickup.com/t/" + task_id +
-                 "\n\nObjective: " + self.context.config["objective"] + "\n" + end)
-        body = pr.get("body") or ""
-        if body.count(start) != body.count(end) or body.count(start) > 1:
-            raise WorkError("PR contains malformed or duplicate managed blocks; resolve before linking.")
-        if start in body:
-            updated = re.sub(re.escape(start) + r".*?" + re.escape(end), lambda _: block, body, flags=re.S)
-        else:
-            updated = body.rstrip() + "\n\n" + block + "\n"
-        def apply():
-            # Refresh before modifying: do not overwrite edits made since the first read.
-            fresh = self.pr(number)
-            if (fresh.get("body") or "") != body:
-                raise WorkError("PR body changed concurrently. Re-read and reconcile before retrying.")
-            fd, path = tempfile.mkstemp(prefix="cu-work-pr-", suffix=".json")
-            try:
-                with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                    json.dump({"body": updated}, handle)
-                execute(["gh", "api", "--method", "PATCH", f"repos/{repo}/pulls/{int(number)}",
-                         "--input", path], self.context.root)
-            finally:
-                os.unlink(path)
-            if block not in (self.pr(number).get("body") or ""):
-                raise WorkError("PR update not verified. Reconcile before another write.")
-            return {"url": pr["url"]}
-        def recover():
-            return {"url": pr["url"]} if block in (self.pr(number).get("body") or "") else None
-        # Separate receipts permit resuming if GitHub succeeds and ClickUp fails.
-        github = self.once(key + ":github", {"operation": "pr-body", "task_id": task_id,
-                                             "pr": pr["url"], "block": block}, apply, recover)
-        clickup = self.progress("Pull request: " + pr["url"] + "\nObjective: " + self.context.config["objective"],
-                                key + ":clickup", task_id)
-        return {"github": github, "clickup": clickup, "note": "Links recorded; no status was changed."}
+        if not str(number).isdigit() or int(number) < 1:
+            raise WorkError("Use a positive pull request number in the bound repository.")
+        return self.link_github(self.github.url + "/pull/" + str(int(number)), key, task_id)
 
     def phase(self, phase, key, task_id=None, pr_number=None, verification=None):
         task = self.task(task_id)

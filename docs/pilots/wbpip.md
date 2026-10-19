@@ -1,4 +1,4 @@
-# wbpip pilot handoff
+# wbpip pilot results and handoff
 
 ## Selected target and current status
 
@@ -8,13 +8,51 @@
 - GitHub default branch: `PROD`, confirmed from repository metadata.
 - Package: R package `wbpip` (DESCRIPTION version 0.1.4 at inspection).
 - Repository agent/binding files: none found in the inspected PROD tree.
-- ClickUp task title, workspace, home list, objective, and statuses: **not read or verified**.
-- Live ClickUp writes / wbpip changes: **none** during this preparation.
+- ClickUp connection: confirmed by authenticated official-MCP reads on 2026-10-19.
+- Bound task: `Test task for MCP testing`, native ID `868mjzgzh`, status `backlog`.
+- Verified Workspace: `37469623`; Space: `61389751` (`PIP Technical Team`).
+- Verified home list: `193304782` (`PIP backend development`).
+- Available statuses: `backlog`, `to do`, `in progress`, `in review`, `done`.
+- Task description/acceptance: empty; pilot objective is the user's authorized
+  test of scoped agent integration, not an inferred business deliverable.
+- Created child: [Verify scoped agent updates](https://app.clickup.com/t/868mjzvmu),
+  native ID `868mjzvmu`, parent `868mjzgzh`, same verified home list.
+- GitHub target in the child's initial description: the existing wbpip repository.
+- Progress comment: `90110280795570`, containing both URLs and a stable marker.
+- Child status changed to `in progress`, read back, then restored to `backlog`.
+- Repeated reads found one pilot child and one matching progress comment;
+  the host workflow reused these records instead of repeating writes.
+- Supplied parent status/description: preserved (`backlog`, empty description).
+- wbpip issues/PRs/code changes: none. Issue creation returned HTTP 403,
+  `Resource not accessible by integration`; the successful repository read/admin
+  flag did not establish integration write permission.
 
-Do not infer `team_id` or list membership from the URL's path. No usable
-`.clickup/project.json` is created until an authenticated task read supplies
-the actual scope fields. The `PROD` branch is a target base, not a place for
-the pilot agent to push changes directly.
+These results validate the official **host MCP** path, including authenticated
+scope reads, repository-associated child creation, linked progress, and a scoped
+status update. They do not validate the local CLI/helper journal against live
+services, live issue/PR backlinks, native activity hooks, or continuous sync.
+The local helper behavior is covered separately by offline tests.
+
+The official compact task response omitted `team_id`. Workspace hierarchy
+verified the actual Workspace/Space, and list metadata matched the task's
+Space/List. The task's plain markers were returned intact under `text_content`;
+`markdown_description` escaped their brackets and wrapped URLs.
+
+No binding file or agent instructions were published to wbpip. The `PROD` branch
+is a target base, not a place for the pilot agent to push changes directly.
+
+## Remaining pilot steps
+
+Resolve the GitHub integration's issue-write permission failure, then create or
+reuse an issue target and verify reciprocal backlinks/discussion reconciliation.
+Check the GitHub App's repository access/Issues permission and organization
+approval as applicable, or use a separately authenticated local `gh` environment
+after the definite 403 rejection. Do not replay an uncertain mutation.
+
+Verify a real draft PR linkage when a meaningful setup/documentation change is
+needed, and independently verify native repository-to-Space mapping/automation
+behavior. Test actual installed Codex, Claude Code, Copilot, and Kilo clients;
+rendered configuration tests do not establish those clients' live behavior.
 
 ## Connect the agent that will run the pilot
 
@@ -32,19 +70,22 @@ Alternatively, run the pilot in the user's own authenticated Codex environment.
 Add the official server using Codex's MCP settings or its documented CLI flow,
 then authenticate it there. Use the same task/repository and skills below.
 
-## First pilot sequence
+## Repeatable pilot sequence
 
 1. Read the task with an authenticated ClickUp tool. Verify native `id`,
-   `team_id`, home `list.id`, actual objective/acceptance criteria, and available
-   statuses. Read existing children so the pilot does not create a duplicate.
+   Workspace, home `list.id`, actual objective/acceptance criteria, and available
+   statuses. Use hierarchy evidence for the official compact response's missing
+   `team_id`; helpers still require their raw scope fields. Read existing children
+   and creation markers so the pilot does not create a duplicate.
 2. Read GitHub state and project instructions, confirm `PROD` is still the
    intended base, and use an isolated branch/worktree. Never push to PROD.
 3. Bind the verified scope and objective. Include `--base-branch PROD` in
    `cu-work init`. Keep real task metadata local until its intended repository
    visibility is reviewed; wbpip is public.
-4. Create or reuse one clearly labeled integration-pilot child task under the
-   selected task. Use that child explicitly for test comments/status changes.
-   Leave the supplied parent task's status and description intact.
+4. Reuse child `868mjzvmu` after verifying scope and its creation marker. Resolve
+   the intended GitHub target first; default issue creation must succeed before
+   a new child. Use that child explicitly for test comments/status changes.
+   Leave the supplied parent's status and description intact.
 5. Record a short progress comment with a stable operation key. Repeat the
    identical call and verify one remote comment exists. Repeat the subtask
    creation with its original key and verify one child exists.

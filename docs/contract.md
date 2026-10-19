@@ -66,6 +66,23 @@ body content, re-reads before patching, and verifies the block afterward. This
 reduces concurrent-edit risk but does not provide a cross-client compare-and-swap.
 Coordinate body edits with reviewers.
 
+Every helper-created subtask has a verified GitHub repo/issue/PR target in its
+initial description. Without an explicit target the helper creates/reuses an
+issue first. Intent, issue creation, child creation, GitHub backlink, and ClickUp
+association have separate receipts. A later failure never rolls back or recreates
+an already successful side. An explicit repository target has no discussion body
+to update. A missing target URL is an error; use `new-issue` to allocate a target.
+
+Progress comments include ClickUp/repository/artifact URLs and mirror to each
+associated issue/PR. Comment reconciliation uses source identity plus content
+revision and provenance markers, skips generated echoes, preserves source text,
+and does not change status or arbitrary fields. GitHub reads paginate; the pinned
+local ClickUp readers return one page, so a full 25-comment page stops reconciliation.
+Use paginated host MCP reads for larger histories/threaded replies after resolving
+any pending helper mutation. The helper exports top-level ClickUp comments only.
+See the setup wiki for native activity linking and optional automations; no
+continuous comment worker is installed.
+
 The helper's `done` gate requires the task's managed PR block, merged/non-draft
 state, expected base, latest PR-head successful check rollup, and non-empty
 verification summary. An empty rollup requires an explicit `require_checks=false`

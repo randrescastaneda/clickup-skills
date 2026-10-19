@@ -148,6 +148,8 @@ class ClickUp:
             result = self.cup(["comments", task_id])
         if not isinstance(result, list) or not all(isinstance(c, dict) for c in result):
             raise WorkError("Invalid comment response; absence of a marker cannot be established.")
+        if len(result) >= 25:
+            raise WorkError("Comment history may be truncated at 25. Use a host MCP with complete pagination; do not infer a missing marker.")
         return result
 
     def children(self, task_id):

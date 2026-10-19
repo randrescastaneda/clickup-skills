@@ -7,7 +7,7 @@ CAPABILITIES = {
     "task.get": {"cup": "cup task", "rest-mcp": "get_task", "context-mcp": "getTaskById", "official": "clickup_get_task"},
     "task.context": {"context-mcp": "getTaskById", "cup": "cup activity", "rest-mcp": "get_task + list_comments", "official": "clickup_get_task + clickup_get_task_comments"},
     "task.subtask": {"cup": "cup create --parent", "rest-mcp": "create_task", "context-mcp": "createTask", "official": "clickup_create_task"},
-    "task.comment": {"cup": "cup comment --message-file", "rest-mcp": "add_comment", "context-mcp": "addComment", "official": "clickup_create_task_comment"},
+    "task.comment": {"cup": "cup comment --message-file", "rest-mcp": "add_comment", "context-mcp": "addComment", "official": "discover create comment tool"},
     "task.status": {"cup": "cup update --status", "rest-mcp": "update_task", "context-mcp": "updateTask", "official": "clickup_update_task"},
     "task.search": {"cup": "cup tasks --all --list", "rest-mcp": "search_tasks", "context-mcp": "searchTasks", "official": "clickup_search"},
     "task.custom-field": {"cup": "cup field", "rest-mcp": "set_custom_field_value"},
@@ -15,6 +15,8 @@ CAPABILITIES = {
     "docs.search": {"official": "clickup_search", "cup": "cup docs", "context-mcp": "searchDocuments"},
     "chat.send": {"official": "discover chat send tool", "cup": "cup chat send"},
     "github.pr": {"github-cli": "gh pr view/create/edit", "github-mcp": "discover pull request tools"},
+    "github.issue": {"github-cli": "gh issue view/create/edit", "github-mcp": "discover issue tools"},
+    "github.comment": {"github-cli": "gh api issues/pulls comment endpoints", "github-mcp": "discover discussion/review/comment tools"},
     "github.checks": {"github-cli": "gh pr view --json statusCheckRollup", "github-mcp": "discover pull request/status/check tools"},
 }
 

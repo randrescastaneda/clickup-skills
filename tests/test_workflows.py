@@ -15,7 +15,8 @@ from clickup_skills.cli import dispatch, parser
 from clickup_skills.context import Context, WorkError, git, remote_repository, write_json
 from clickup_skills.mcp import response
 from clickup_skills.routing import route
-from clickup_skills.workflow import Workflow
+from clickup_skills.workflow import Workflow, sync_event
+from clickup_skills.github import GitHub
 
 
 def task(task_id="root", parent=None, team="100", list_id="200"):
@@ -64,6 +65,52 @@ class FakeClickUp:
         pass
 
 
+class FakeGitHub(GitHub):
+    def __init__(self, context):
+        super().__init__(context)
+        self.artifacts = {self.url + "/pull/42": {"html_url": self.url + "/pull/42",
+                          "body": "Reviewer notes: preserve me", "base": {"ref": "main"}},
+                          self.url + "/issues/7": {"html_url": self.url + "/issues/7", "body": "Original issue"}}
+        self.notes = {}
+        self.writes = []
+        self.lose_issue_response = False
+        self.lose_note_response = False
+
+    def request(self, endpoint, payload=None, method="POST"):
+        if endpoint == self.api:
+            return {"html_url": self.url}
+        if endpoint == self.api + "/issues" and payload is not None:
+            url = self.url + "/issues/" + str(100 + len(self.artifacts))
+            self.artifacts[url] = {"html_url": url, "body": payload["body"]}
+            self.writes.append(("create", url))
+            if self.lose_issue_response:
+                raise WorkError("Issue response lost")
+            return {"html_url": url}
+        suffix = endpoint.removeprefix(self.api).replace("/pulls/", "/pull/")
+        url = self.url + suffix
+        if payload is not None:
+            self.artifacts[url]["body"] = payload["body"]
+            self.writes.append(("body", url))
+        return copy.deepcopy(self.artifacts[url])
+
+    def pages(self, endpoint):
+        return [dict(copy.deepcopy(x), number=int(url.rsplit("/", 1)[1]))
+                for url, x in self.artifacts.items() if "/issues/" in url]
+
+    def comments(self, target):
+        return copy.deepcopy(self.notes.get(target["url"], []))
+
+    def comment(self, target, text):
+        notes = self.notes.setdefault(target["url"], [])
+        note = {"id": "comment:" + str(len(notes)), "url": target["url"] + "#issuecomment-" + str(len(notes)),
+                "text": text, "author": "agent"}
+        notes.append(note)
+        self.writes.append(("comment", target["url"]))
+        if self.lose_note_response:
+            raise WorkError("GitHub comment response lost")
+        return copy.deepcopy(note)
+
+
 class BoundTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -79,7 +126,8 @@ class BoundTest(unittest.TestCase):
         write_json(self.root / ".clickup/project.json", config)
         self.ctx = Context(self.root)
         self.backend = FakeClickUp()
-        self.work = Workflow(self.ctx, self.backend)
+        self.github = FakeGitHub(self.ctx)
+        self.work = Workflow(self.ctx, self.backend, self.github)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -152,7 +200,115 @@ class BoundTest(unittest.TestCase):
         second = self.work.subtask("Validate", "Acceptance: valid", "child:validate", "child")
         self.assertTrue(second["reused"])
         self.assertEqual(first["result"]["id"], second["result"]["id"])
-        self.assertEqual(len(self.backend.writes), 1)
+        self.assertEqual(sum(w[0] == "subtask" for w in self.backend.writes), 1)
+        self.assertEqual(sum(w[0] == "create" for w in self.github.writes), 1)
+        child = self.backend.tasks[first["result"]["id"]]
+        self.assertIn(first["github"], child["description"])
+        self.assertIn("CU-" + child["id"], self.github.artifacts[first["github"]]["body"])
+
+    def test_issue_is_created_before_subtask_and_uncertain_create_is_recovered(self):
+        self.github.lose_issue_response = True
+        with self.assertRaisesRegex(WorkError, "response lost"):
+            self.work.subtask("Validate", "Acceptance", "create", "child")
+        self.assertFalse(self.backend.writes)
+        self.github.lose_issue_response = False
+        result = self.work.subtask("Validate", "Acceptance", "create", "child")
+        self.assertIn("/issues/", result["github"])
+        self.assertEqual(sum(w[0] == "create" for w in self.github.writes), 1)
+
+    def test_changed_subtask_inputs_cannot_create_an_extra_issue(self):
+        self.work.subtask("Validate", "Acceptance", "create", "child", self.github.url)
+        before = list(self.github.writes)
+        with self.assertRaisesRegex(WorkError, "different inputs"):
+            self.work.subtask("Validate", "Acceptance", "create", "child")
+        self.assertEqual(before, self.github.writes)
+
+    def test_subtask_with_explicit_repo_or_issue_and_wrong_repo_rejection(self):
+        result = self.work.subtask("Plan", "Acceptance", "plan", "child", self.github.url)
+        self.assertEqual(result["github"], self.github.url)
+        self.assertFalse(self.github.writes)
+        before = list(self.backend.writes)
+        with self.assertRaisesRegex(WorkError, "bound repository"):
+            self.work.subtask("Wrong", "Acceptance", "wrong", "child", "https://github.com/other/repo/issues/7")
+        self.assertEqual(before, self.backend.writes)
+
+    def test_issue_backlink_preserves_original_and_progress_mirrors_with_recovery(self):
+        url = self.github.url + "/issues/7"
+        self.work.link_github(url, "link", "child")
+        self.assertIn("Original issue", self.github.artifacts[url]["body"])
+        self.github.lose_note_response = True
+        with self.assertRaises(WorkError):
+            self.work.progress("Tests passed", "progress", "child")
+        self.github.lose_note_response = False
+        self.work.progress("Tests passed", "progress", "child")
+        self.assertEqual(len(self.github.notes[url]), 1)
+        self.assertEqual(sum("Tests passed" in c["text"] for c in self.backend.notes), 1)
+        self.assertIn("https://app.clickup.com/t/child", self.github.notes[url][0]["text"])
+
+    def test_comment_sync_is_bidirectional_deduplicated_and_skips_echoes(self):
+        url = self.github.url + "/pull/42"
+        self.work.link_github(url, "link", "child")
+        self.github.notes[url] = [{"id": "review:1", "text": "Please test edge case", "author": "reviewer", "url": url + "#pullrequestreview-1"},
+                                  {"id": "review-comment:1", "text": "Inline comment", "author": "reviewer", "url": url + "#discussion_r1"}]
+        self.backend.notes.append({"id": "human", "text": "Acceptance clarified", "task_id": "child", "user": "Planner"})
+        self.work.sync_comments("child")
+        counts = (len(self.backend.notes), len(self.github.notes[url]))
+        self.work.sync_comments("child")
+        self.assertEqual(counts, (len(self.backend.notes), len(self.github.notes[url])))
+        (self.ctx.local / "state.json").unlink()
+        self.work.sync_comments("child")
+        self.assertEqual(counts, (len(self.backend.notes), len(self.github.notes[url])))
+        self.assertEqual(sum("Please test edge case" in x["text"] for x in self.backend.notes), 1)
+        self.assertEqual(sum("Acceptance clarified" in x["text"] for x in self.github.notes[url]), 1)
+        self.assertIn("Planner", self.github.notes[url][-1]["text"])
+        self.github.notes[url][0]["text"] = "Updated review"
+        self.work.sync_comments("child", "to-clickup")
+        self.assertEqual(len(self.backend.notes), counts[0] + 1)
+        self.assertFalse(any(w[0] == "status" for w in self.backend.writes))
+
+    def test_repository_only_task_has_links_but_no_discussion_sync(self):
+        self.work.progress("Scoped update", "update", "child")
+        self.assertIn("[cu-work-github:" + self.github.url + "]", self.backend.notes[0]["text"])
+        with self.assertRaisesRegex(WorkError, "Link an issue or PR"):
+            self.work.sync_comments("child")
+
+    def test_host_provenance_is_reused_without_helper_receipts(self):
+        url = self.github.url + "/issues/7"
+        self.work.link_github(url, "link", "child")
+        event = sync_event(["github", url, "comment:123", "Análisis"])
+        self.github.notes[url] = [{"id": "comment:123", "text": "Análisis", "url": url + "#issuecomment-123"}]
+        self.backend.notes.append({"id": "host", "task_id": "child", "text": "Host snapshot\n[cu-work-sync:" + event + "]"})
+        before = len(self.backend.notes)
+        self.work.sync_comments("child", "to-clickup")
+        self.assertEqual(before, len(self.backend.notes))
+
+    def test_subtask_backlink_failure_resumes_existing_child_and_issue(self):
+        with patch.object(self.work, "_artifact_backlink", side_effect=WorkError("Backlink unavailable")):
+            with self.assertRaises(WorkError):
+                self.work.subtask("Validate", "Acceptance", "create", "child")
+        self.work.subtask("Validate", "Acceptance", "create", "child")
+        self.assertEqual(sum(w[0] == "subtask" for w in self.backend.writes), 1)
+        self.assertEqual(sum(w[0] == "create" for w in self.github.writes), 1)
+
+    def test_github_discussions_read_all_pages_and_review_types(self):
+        github = GitHub(self.ctx)
+        with patch("clickup_skills.github.execute", return_value=[[{"id": 1}], [{"id": 2}]]) as run:
+            self.assertEqual(github.pages("repos/acme/analysis/issues?per_page=100"), [{"id": 1}, {"id": 2}])
+            self.assertEqual(run.call_args.args[0][-2:], ["--paginate", "--slurp"])
+            self.assertEqual(run.call_args.args[0][2:4], ["--hostname", "github.com"])
+        target = {"kind": "pull", "number": 42, "url": github.url + "/pull/42"}
+        with patch.object(github, "pages", side_effect=[[{"id": 1, "body": "Conversation"}],
+                                                       [{"id": 1, "body": "Inline"}],
+                                                       [{"id": 1, "body": "Review"}]]) as pages:
+            notes = github.comments(target)
+            self.assertEqual({n["id"] for n in notes}, {"comment:1", "review-comment:1", "review:1"})
+            self.assertEqual(pages.call_count, 3)
+
+    def test_full_comment_page_blocks_incomplete_reconciliation(self):
+        backend = ClickUp(self.ctx)
+        with patch("clickup_skills.backends.execute", return_value=[{"id": str(i)} for i in range(25)]):
+            with self.assertRaisesRegex(WorkError, "truncated"):
+                backend.comments("child")
 
     def pr_data(self):
         return {"url": "https://github.com/acme/analysis/pull/42", "body": "Reviewer notes: preserve me",
@@ -160,36 +316,21 @@ class BoundTest(unittest.TestCase):
                 "statusCheckRollup": [{"status": "COMPLETED", "conclusion": "SUCCESS"}]}
 
     def test_pr_link_preserves_body_and_does_not_change_status(self):
-        pr = self.pr_data()
-        def gh(argv, cwd=None):
-            if "PATCH" in argv:
-                payload = json.loads(Path(argv[argv.index("--input") + 1]).read_text(encoding="utf-8"))
-                pr["body"] = payload["body"]
-                return pr
-            return copy.deepcopy(pr)
-        with patch("clickup_skills.workflow.execute", gh):
-            self.work.link_pr(42, "link", "child")
-            self.work.link_pr(42, "link", "child")
+        self.work.link_pr(42, "link", "child")
+        self.work.link_pr(42, "link", "child")
+        pr = self.github.artifacts[self.github.url + "/pull/42"]
         self.assertIn("Reviewer notes: preserve me", pr["body"])
         self.assertEqual(pr["body"].count("<!-- clickup-skills:child -->"), 1)
         self.assertEqual(sum(w[0] == "comment" for w in self.backend.writes), 1)
         self.assertFalse(any(w[0] == "status" for w in self.backend.writes))
 
     def test_partial_link_resumes_only_missing_side(self):
-        pr = self.pr_data()
-        patches = []
-        def gh(argv, cwd=None):
-            if "PATCH" in argv:
-                patches.append(argv)
-                pr["body"] = json.loads(Path(argv[-1]).read_text(encoding="utf-8"))["body"]
-            return copy.deepcopy(pr)
         self.backend.lose_comment_response = True
-        with patch("clickup_skills.workflow.execute", gh):
-            with self.assertRaises(WorkError):
-                self.work.link_pr(42, "link", "child")
-            self.backend.lose_comment_response = False
+        with self.assertRaises(WorkError):
             self.work.link_pr(42, "link", "child")
-        self.assertEqual(len(patches), 1)
+        self.backend.lose_comment_response = False
+        self.work.link_pr(42, "link", "child")
+        self.assertEqual(sum(w[0] == "body" for w in self.github.writes), 1)
         self.assertEqual(len(self.backend.notes), 1)
 
     def test_completion_blocks_open_failed_missing_checks_and_unlinked_pr(self):
@@ -294,7 +435,7 @@ class RoutingProtocolTest(unittest.TestCase):
         self.assertIn("tools", init["result"]["capabilities"])
         self.assertIsNone(response({"jsonrpc": "2.0", "method": "notifications/initialized"}))
         tools = response({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
-        self.assertEqual(len(tools["result"]["tools"]), 7)
+        self.assertEqual(len(tools["result"]["tools"]), 9)
         for args in (None, {}, {"project_dir": "."}, {"project_dir": 3}):
             result = response({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                                "params": {"name": "get_bound_task", "arguments": args}})

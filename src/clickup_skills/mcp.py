@@ -28,12 +28,16 @@ TOOLS = [
          {"operation": {"type": "string", "enum": list(CAPABILITIES)},
           "available": {"type": "array", "items": STRING}}, ["operation", "available"]),
     tool("get_bound_task", "Fetch and verify a task belongs to the bound workspace, list, and roots.", TASK),
-    tool("create_bound_subtask", "Create a subtask under the verified task; reuse the key for identical inputs.",
-         {**WRITE, "title": STRING, "description": STRING}, ["key", "title", "description"], True),
-    tool("record_progress", "Post a scoped progress comment with a reconciliation marker.",
+    tool("create_bound_subtask", "Create a GitHub-associated subtask. Default creates/reuses an issue first. Requires gh.",
+         {**WRITE, "title": STRING, "description": STRING, "github_target": STRING}, ["key", "title", "description"], True),
+    tool("record_progress", "Post linked progress and mirror to associated issues/PRs with resumable receipts.",
          {**WRITE, "text": STRING}, ["key", "text"], True),
     tool("link_pull_request", "Preserve PR content and link both systems. Requires gh; no status changes.",
          {**WRITE, "pr_number": {"type": "integer", "minimum": 1}}, ["key", "pr_number"], True),
+    tool("link_github_target", "Link a bound repo/issue/PR or create/reuse new-issue. Requires gh; preserves body text.",
+         {**WRITE, "target": STRING, "title": STRING, "description": STRING}, ["key", "target"], True),
+    tool("sync_task_comments", "Reconcile top-level ClickUp comments and GitHub issue/PR discussions; no background worker.",
+         {**TASK, "direction": {"type": "string", "enum": ["both", "to-clickup", "to-github"]}}, [], True),
     tool("set_task_phase", "Set a mapped status. Done requires a merged PR, successful CI, and verification text.",
          {**WRITE, "phase": {"type": "string", "enum": ["in_progress", "review", "done"]},
           "pr_number": {"type": "integer", "minimum": 1}, "verification": STRING}, ["key", "phase"], True),
@@ -73,11 +77,15 @@ def call(name, args):
             return work.task(task)
         with ctx.locked():
             if name == "create_bound_subtask":
-                return work.subtask(args["title"], args["description"], args["key"], task)
+                return work.subtask(args["title"], args["description"], args["key"], task, args.get("github_target"))
             if name == "record_progress":
                 return work.progress(args["text"], args["key"], task)
             if name == "link_pull_request":
                 return work.link_pr(args["pr_number"], args["key"], task)
+            if name == "link_github_target":
+                return work.link_github(args["target"], args["key"], task, args.get("title"), args.get("description", ""))
+            if name == "sync_task_comments":
+                return work.sync_comments(task, args.get("direction", "both"))
             if name == "set_task_phase":
                 return work.phase(args["phase"], args["key"], task, args.get("pr_number"), args.get("verification"))
         raise WorkError("Unsupported tool.")

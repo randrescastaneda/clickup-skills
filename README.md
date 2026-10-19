@@ -12,8 +12,8 @@ This repository supplies the shared workflow, rather than another broad API wrap
 | Component | Purpose |
 | --- | --- |
 | Five portable skills | Bind a project, route tools, work a task, link GitHub, resume/handoff |
-| `cu-work` CLI | Verify task scope, create subtasks, post progress, link PRs, and gate completion |
-| `clickup_work` MCP | The same seven scoped workflow tools for MCP-capable agents |
+| `cu-work` CLI | Verify scope, create GitHub-associated subtasks, link issues/PRs, sync discussions, and gate completion |
+| `clickup_work` MCP | The same nine scoped workflow tools for MCP-capable agents |
 | Claude Code marketplace + portable/Codex manifests | Team installation from this repository |
 | Copilot, Kilo, VS Code, and Posit adapters | Render each client's own MCP format from the same profiles |
 | Optional MCP profiles | Official ClickUp, rich-context community MCP, and REST community MCP |
@@ -171,6 +171,7 @@ cu-work --project-dir /absolute/project progress --task 86native \
   --message-file /tmp/progress.md --key '86native:validation-passed:v1'
 # Create the PR with gh or GitHub MCP first, then:
 cu-work --project-dir /absolute/project link-pr --task 86native --pr 42 --key '86native:pr42:link:v1'
+cu-work --project-dir /absolute/project sync-comments --task 86native
 cu-work --project-dir /absolute/project phase --task 86native --phase review --key '86native:review:v1'
 # After acceptance, merge, and CI verification:
 cu-work --project-dir /absolute/project phase --task 86native --phase done --pr 42 \
@@ -189,8 +190,19 @@ the bound base, successful PR-head checks, and a supplied verification summary.
 No checks is allowed only with an explicit `require_checks=false` project policy.
 The helper records the agent's acceptance evidence; it cannot judge its truth.
 
-This is agent-driven orchestration. It does not install native ClickUp/GitHub
-OAuth integrations, webhooks, a background synchronizer, or auto-merge/deployment.
+Every new subtask receives a GitHub target before creation: an existing bound
+repo/issue/PR supplied by `--github-target`, or a new/reused issue by default.
+`link-github --target URL` associates existing tasks. Progress includes both
+systems' URLs and mirrors to associated issue/PR discussions. `sync-comments`
+reconciles human discussion snapshots with source links, deduplication, and echo
+suppression; it does not change statuses or run in the background.
+
+Follow the [team setup wiki](docs/wiki/README.md) for native GitHub activity links,
+optional ClickUp Automations, host-MCP execution, and synchronization limits.
+Native integration is available on all ClickUp plans; GitHub Automation
+integrations require Business or above. Free MCP software does not remove plan
+limits. No OAuth integration, webhook, background worker, merge, or deployment
+is installed automatically.
 
 ## Verify and contribute
 
@@ -202,7 +214,7 @@ Checks cover cross-project isolation, uncertain writes, repeated calls, partial
 ClickUp/GitHub linkage, completion gates, subprocess argument safety, MCP stdio,
 client metadata, and configuration rendering. They use offline fixtures and never
 touch a real workspace. See [validation notes](docs/validation.md) for the live
-pilot still required before team rollout.
+pilot results and remaining client acceptance steps.
 
 The original implementations are credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Reviewed commits/package versions and preserved MIT notices are in

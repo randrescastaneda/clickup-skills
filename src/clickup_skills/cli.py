@@ -27,14 +27,21 @@ def parser():
     r = sub.add_parser("route")
     r.add_argument("operation", choices=list(CAPABILITIES))
     r.add_argument("--available", required=True, help="Comma-separated backends actually available in this session")
-    for name in ("task", "focus", "subtask", "progress", "link-pr", "phase"):
+    for name in ("task", "focus", "subtask", "progress", "link-pr", "link-github", "sync-comments", "phase"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--task")
-        if name in ("subtask", "progress", "link-pr", "phase"):
+        if name in ("subtask", "progress", "link-pr", "link-github", "phase"):
             cmd.add_argument("--key", required=True, help="Stable key, reused only for identical inputs")
         if name == "subtask":
             cmd.add_argument("--title", required=True)
             cmd.add_argument("--description-file", type=Path, required=True)
+            cmd.add_argument("--github-target", help="Bound repo/issue/PR URL; default creates/reuses an issue")
+        if name == "link-github":
+            cmd.add_argument("--target", required=True, help="Bound repo/issue/PR URL or new-issue")
+            cmd.add_argument("--title", help="Required for new-issue")
+            cmd.add_argument("--description-file", type=Path)
+        if name == "sync-comments":
+            cmd.add_argument("--direction", choices=["both", "to-clickup", "to-github"], default="both")
         if name == "progress":
             cmd.add_argument("--message-file", type=Path, required=True)
         if name in ("link-pr", "phase"):
@@ -103,11 +110,17 @@ def dispatch(args):
                 ctx.save(state)
                 return {"active_task_id": task["id"], "objective": ctx.config["objective"]}
             if args.command == "subtask":
-                return work.subtask(args.title, args.description_file.read_text(encoding="utf-8"), args.key, args.task)
+                return work.subtask(args.title, args.description_file.read_text(encoding="utf-8"), args.key,
+                                    args.task, args.github_target)
             if args.command == "progress":
                 return work.progress(args.message_file.read_text(encoding="utf-8"), args.key, args.task)
             if args.command == "link-pr":
                 return work.link_pr(args.pr, args.key, args.task)
+            if args.command == "link-github":
+                text = args.description_file.read_text(encoding="utf-8") if args.description_file else ""
+                return work.link_github(args.target, args.key, args.task, args.title, text)
+            if args.command == "sync-comments":
+                return work.sync_comments(args.task, args.direction)
             if args.command == "phase":
                 text = args.verification_file.read_text(encoding="utf-8") if args.verification_file else None
                 return work.phase(args.phase, args.key, args.task, args.pr, text)
