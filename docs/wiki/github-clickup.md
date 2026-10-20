@@ -195,6 +195,13 @@ rules. No such worker or webhook is installed by this package.
   If absent, check repository/Space mapping, account permissions, and ID format.
 - If an expected tool is absent, reload/select that plugin in the actual agent
   session. Another editor's sign-in does not authenticate this environment.
+- If GitHub reads succeed but writes return `403 Resource not accessible by
+  integration`, check the app installation for the **repository owner account
+  or organization**, not only the signed-in user's personal installation. The
+  wbpip pilot was fixed by installing the app on `PIP-Technical-Team`. Select
+  the intended repositories and review requested permissions/organization
+  approval. User-level repository admin permission does not establish app access.
+  See [GitHub's installation settings guide](https://docs.github.com/en/apps/using-github-apps/reviewing-and-modifying-installed-github-apps).
 - Keep failed CI, draft/open/unmerged PRs, and unverified acceptance out of Done.
 - Sharing comments also shares their content with the bound repository's
   audience. Bind the intended project and use directional sync where appropriate.

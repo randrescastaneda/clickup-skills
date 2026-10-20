@@ -23,15 +23,15 @@
 - Repeated reads found one pilot child and one matching progress comment;
   the host workflow reused these records instead of repeating writes.
 - Supplied parent status/description: preserved (`backlog`, empty description).
-- wbpip issues/PRs/code changes: none. Issue creation returned HTTP 403,
+- Initial 2026-10-19 attempt: no wbpip issue/PR/code changes. Issue creation returned HTTP 403,
   `Resource not accessible by integration`; the successful repository read/admin
   flag did not establish integration write permission.
 
-These results validate the official **host MCP** path, including authenticated
+These initial results validate the official **host MCP** path, including authenticated
 scope reads, repository-associated child creation, linked progress, and a scoped
-status update. They do not validate the local CLI/helper journal against live
-services, live issue/PR backlinks, native activity hooks, or continuous sync.
-The local helper behavior is covered separately by offline tests.
+status update. The 2026-10-20 follow-up below also verifies issue/PR backlinks
+and controlled PR conversation transfers. Local CLI/helper journal behavior is
+covered separately by offline tests; native hooks and continuous sync are unverified.
 
 The official compact task response omitted `team_id`. Workspace hierarchy
 verified the actual Workspace/Space, and list metadata matched the task's
@@ -41,18 +41,52 @@ Space/List. The task's plain markers were returned intact under `text_content`;
 No binding file or agent instructions were published to wbpip. The `PROD` branch
 is a target base, not a place for the pilot agent to push changes directly.
 
+## Live GitHub follow-up: 2026-10-20
+
+The accessible GitHub App installations initially included the user's personal
+account but not `PIP-Technical-Team`. After the user installed the app for the
+organization, that installation became visible and the same issue-creation
+operation succeeded. Reading the public repository and seeing user-level admin
+permission had not established the app's ability to write to it.
+
+| Check | Observed result |
+| --- | --- |
+| Issue creation | [wbpip #269](https://github.com/PIP-Technical-Team/wbpip/issues/269), with a managed backlink to the existing child |
+| Child reuse | `868mjzvmu`, same verified parent/List; no additional child |
+| PR creation | [wbpip #270](https://github.com/PIP-Technical-Team/wbpip/pull/270), draft, base `PROD` |
+| PR scope | One new file, `docs/clickup-agent-pilot.md`, 32 lines; existing `^docs$` R-build exclusion |
+| PR head | `be4baf54610f5291071d3d52185a7235f4a30890` |
+| Body preservation | Original PR description/review notes retained; one task-specific managed block |
+| Reciprocal links | Issue/PR bodies link the child; scoped ClickUp association comments link issue/PR |
+| ClickUp → GitHub fixture | Source `90110280918641`; destination PR comment `6291826233` |
+| GitHub → ClickUp fixture | Source PR comment `6291808000`; destination `90110280919036` |
+| Second reconciliation pass | Exactly one copy for each canonical provenance key; generated mirrors skipped |
+| Completion | Withheld because PR is draft/open and unmerged; child remains `backlog` |
+| Parent preservation | Parent remains `backlog`, description empty, one pilot child |
+
+The conversation transfers used explicitly labeled, controlled test comments.
+They validate the host MCP/skill procedure and shared source-event format, not
+live helper execution, native webhook delivery, inline review/reply transfers,
+or exact-once behavior across simultaneous machines. The GitHub connector's
+comment-write tool is documented for PR conversation comments; plain issue
+comment writes were not exercised through it. The helper's `gh` issue-comment
+path and review-type parsing remain offline-tested.
+
+The pilot branch is `chore/CU-868mjzvmu-agent-integration-pilot`. Only that branch
+received the documentation commit; nothing was pushed directly to `PROD`,
+merged, or deployed. A draft PR with successful linkage is not completion evidence.
+
 ## Remaining pilot steps
 
-Resolve the GitHub integration's issue-write permission failure, then create or
-reuse an issue target and verify reciprocal backlinks/discussion reconciliation.
-Check the GitHub App's repository access/Issues permission and organization
-approval as applicable, or use a separately authenticated local `gh` environment
-after the definite 403 rejection. Do not replay an uncertain mutation.
+The permission repair, issue creation, draft PR linkage, and controlled two-way
+PR discussion checks passed. No further user input is needed for that bounded
+host-MCP pilot. Keep #269/#270 available for review; no merge is part of the test.
 
-Verify a real draft PR linkage when a meaningful setup/documentation change is
-needed, and independently verify native repository-to-Space mapping/automation
-behavior. Test actual installed Codex, Claude Code, Copilot, and Kilo clients;
-rendered configuration tests do not establish those clients' live behavior.
+Independently verify native repository-to-Space mapping/automation behavior,
+live local `cup`/REST runtime credentials, long histories/threaded replies, and
+actual installed Codex, Claude Code, Copilot, and Kilo clients. Rendered config
+tests do not establish installed-client behavior. These are rollout acceptance
+steps rather than unresolved results of the completed conversation test.
 
 ## Connect the agent that will run the pilot
 

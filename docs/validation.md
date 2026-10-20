@@ -48,8 +48,17 @@ Do not claim a faster/cheaper backend merely from the default ordering.
 
 Live ClickUp access was verified through the official host MCP on 2026-10-19:
 one scoped repository-associated child, one linked progress comment, repeat-read
-reuse, and an in-progress/backlog status round trip. GitHub issue creation
-returned HTTP 403, so live issue/PR discussion synchronization remains unverified.
-See [the pilot record](pilots/wbpip.md). Local CLI/REST runtime credentials,
-native integration/automation behavior, and real installed-client plugin loading
-remain separate acceptance steps from the passing offline suite.
+reuse, and an in-progress/backlog status round trip. Initial GitHub issue creation
+returned HTTP 403. On 2026-10-20 the user installed the GitHub App for the actual
+repository owner organization, resolving the missing installation. The follow-up
+created issue #269 and draft PR #270 in wbpip, verified reciprocal task links and
+PR body preservation, transferred labeled conversation fixtures in both
+directions, and reused exactly one mirror per canonical source-event key on a
+second pass. The child and parent remain open; the original parent is unchanged.
+
+See [the pilot record](pilots/wbpip.md) for source/destination IDs and exact scope.
+These are live **host-MCP/skill** checks. Local CLI/REST runtime credentials,
+plain issue-comment writes, live inline review/thread transfers, native
+integration/automation behavior, and real installed-client plugin loading remain
+separate acceptance steps from the passing offline suite. No always-on comment
+worker, merge, or deployment was installed.
