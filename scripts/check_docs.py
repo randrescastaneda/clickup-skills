@@ -71,6 +71,11 @@ def main():
     installation = (output / "installation.html").read_text(encoding="utf-8")
     assert 'class="language-bash"' in installation and "Who does what" in installation
     assert "Each teammate" in installation and "Project lead" in installation
+    lock = json.loads((ROOT / "upstreams.lock.json").read_text(encoding="utf-8"))
+    cup = next(p for p in lock["projects"] if p.get("package") == "@krodak/clickup-cli")
+    command = "npm install -g " + cup["install_spec"]
+    assert command in installation and command in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "npm install -g " + cup["package"] + "@" + cup["version"] not in installation
     setups = json.loads((output / "client-setups.json").read_text(encoding="utf-8"))
     config = json.loads((ROOT / "profiles/default.json").read_text(encoding="utf-8"))
     for client, data in setups.items():

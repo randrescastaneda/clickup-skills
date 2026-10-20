@@ -171,7 +171,7 @@ assignees, labels, or status in both directions.
 Host agents should use the [shared provenance format](../../skills/clickup-github/references/synchronization.md)
 so helper reconciliation can recognize their existing copies after handoff.
 
-The pinned local ClickUp backends expose a single comment page. The helper
+The reviewed local ClickUp backends expose a single comment page. The helper
 stops at 25 comments instead of assuming a complete history. Use a host MCP
 with explicit pagination and fetch threaded replies there when needed. GitHub
 discussion reads paginate completely. Replies to pending/unsubmitted GitHub

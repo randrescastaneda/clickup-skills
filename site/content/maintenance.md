@@ -16,7 +16,7 @@ This site lives in the plugin repository. GitHub Actions builds it from the chec
 | `src/clickup_skills/mcp.py` | Actual MCP tool names, descriptions, required inputs and schemas |
 | `src/clickup_skills/cli.py` | Current CLI commands and help |
 | `profiles/*.json` + client renderers | Profile server inventory and generated per-client MCP configurations |
-| `upstreams.lock.json` | Reviewed dependency versions in setup snippets and dependency reference |
+| `upstreams.lock.json` | Reviewed dependency baselines and explicit install policies; the ClickUp CLI follows `latest` |
 | Operational Markdown in `docs/` | Client matrix, execution contract, native integration and validation pages |
 | GitHub source revision / releases API | Build provenance, commit link, latest published release metadata |
 | `site/content/` and `site/assets/` | Written guides, examples, design, search and navigation |

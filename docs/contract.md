@@ -76,7 +76,7 @@ to update. A missing target URL is an error; use `new-issue` to allocate a targe
 Progress comments include ClickUp/repository/artifact URLs and mirror to each
 associated issue/PR. Comment reconciliation uses source identity plus content
 revision and provenance markers, skips generated echoes, preserves source text,
-and does not change status or arbitrary fields. GitHub reads paginate; the pinned
+and does not change status or arbitrary fields. GitHub reads paginate; the reviewed
 local ClickUp readers return one page, so a full 25-comment page stops reconciliation.
 Use paginated host MCP reads for larger histories/threaded replies after resolving
 any pending helper mutation. The helper exports top-level ClickUp comments only.
