@@ -35,6 +35,10 @@ jobs:
           python-version: '3.12'
       - name: Install documentation build dependency
         run: python -m pip install -r site/requirements.txt
+      - name: Set up installer test runtime
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
       - name: Check documentation impact for pull requests
         if: github.event_name == 'pull_request'
         env:

@@ -21,7 +21,7 @@ def digest(directory):
     return result.hexdigest()
 
 
-def install(destination, method="copy", update=False):
+def install(destination, method="copy", update=False, dry_run=False):
     destination = Path(destination)
     actions = []
     for source in sorted((ROOT / "skills").iterdir()):
@@ -43,6 +43,8 @@ def install(destination, method="copy", update=False):
             else:
                 raise ValueError("Refusing to replace existing or locally modified skill: " + str(target))
         actions.append((source, target, action))
+    if dry_run:
+        return actions
     destination.mkdir(parents=True, exist_ok=True)
     for source, target, action in actions:
         if action in ("copy", "update"):

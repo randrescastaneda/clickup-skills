@@ -24,7 +24,64 @@ This repository supplies the shared workflow, rather than another broad API wrap
 There is no paid integration dependency. ClickUp/GitHub service permissions,
 rate limits, plan features, and your model provider's charges still apply.
 
-## Install once per teammate
+## One-command installation per teammate
+
+Install Python 3.11+, Node 22+, and Git first. Then run this from any directory:
+
+```bash
+npx --yes github:randrescastaneda/clickup-skills setup --client kilo
+```
+
+Replace `kilo` with `codex`, `claude`, or `copilot`. The installer creates a private
+Python environment, installs **Krodak's `@krodak/clickup-cli@latest`**, copies the
+five skills, and merges the client's personal MCP settings. No manual clone,
+virtual-environment activation, Python install commands, or separate skill/config
+commands are needed. The GitHub form works without an npm registry publication.
+
+Existing settings and JSONC comments are preserved. Settings changes receive a
+private backup; conflicting MCP entries or locally edited skills stop setup.
+The MCP command uses an absolute persistent runtime path, independent of the
+temporary npx cache. Nothing installs or updates during task writes.
+
+Each teammate then authenticates individually (the installer prints these steps):
+
+```bash
+npx --yes github:randrescastaneda/clickup-skills cup init
+npx --yes github:randrescastaneda/clickup-skills cup auth
+# Install GitHub CLI from https://cli.github.com/ first, then:
+gh auth login
+```
+
+Reload the agent and ask it to verify the five skills, MCP tools, and account
+access. The local GitHub workflow requires GitHub CLI; installing GitHub MCP alone
+does not supply it. This setup does not change remote tasks or enable a native
+integration. Bind the working project below after installation.
+
+To update the plugin runtime, managed skills/configuration, and Krodak CLI:
+
+```bash
+npx --yes github:randrescastaneda/clickup-skills update --client kilo
+```
+
+Repeat for each client you installed. Plain `setup` reuses an unchanged runtime;
+`update` explicitly refreshes Krodak's latest release. Do this between task writes,
+then have the agent read the bound task before resuming. Other executable MCP
+dependencies keep their reviewed pins.
+
+For project-scoped setup, append `--project-dir /absolute/path/to/project`.
+VS Code uses `--client vscode` with that flag. Optional `--profile official` or
+`--profile context` adds the corresponding existing adapter; OAuth/API-key setup
+is still personal. Advanced REST and OpenCode setup remain documented below.
+Do not install the same skills/servers both with this installer and with Claude's
+marketplace plugin. The installer configures current Kilo, not legacy extensions.
+
+Agents can access the managed shell workflow with `npx --yes
+github:randrescastaneda/clickup-skills work <cu-work arguments>`; everyday users
+delegate in plain language. MCP-based agents use the configured workflow tools.
+
+## Advanced manual installation / contributing
+
+The checkout-based route remains available for contributors and custom clients.
 
 Python 3.11+ is required. The preferred CLI also requires Node 22+. Authenticate
 with each teammate's own accounts; do not share a token through this repository.

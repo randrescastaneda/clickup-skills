@@ -4,6 +4,52 @@ One set of workflow skills and executables is shared. Discovery paths and MCP
 configuration belong to each agent, even when several agents run in one editor.
 These adapters are based on publisher documentation checked on 2026-10-19.
 
+## Recommended setup
+
+Each teammate runs one command for their client, from any directory:
+
+```bash
+npx --yes github:randrescastaneda/clickup-skills setup --client kilo
+```
+
+Supported automatic targets are `kilo`, `codex`, `claude`, and `copilot` for
+personal settings, plus `vscode` with `--project-dir /absolute/project`.
+The installer handles the Python environment, Krodak's latest CLI, five skills,
+and a safe configuration merge. Python 3.11+, Node 22+, and Git remain prerequisites.
+GitHub CLI must also be installed and personally authenticated for local workflows.
+Use `update --client CLIENT` with the same scope to refresh the managed install.
+
+| Client | Personal configuration managed by setup |
+| --- | --- |
+| Kilo | `~/.config/kilo/kilo.jsonc` (respects `XDG_CONFIG_HOME`) |
+| Codex | `~/.codex/config.toml` (respects `CODEX_HOME`) |
+| Claude Code | `~/.claude.json`, preserving all other settings |
+| Copilot | `~/.copilot/mcp-config.json` |
+
+Project setup uses the destinations below (Codex: `.codex/config.toml`);
+project Codex config may require trusting the project in Codex. Existing project
+`kilo.jsonc` takes precedence over creating `.kilo/kilo.jsonc`.
+
+Settings updates retain a private sibling backup. Managed server receipts prevent
+overwriting locally changed commands. Existing GitHub servers are reused, including
+an equivalent remote URL under another name. JSONC comments and unrelated TOML are
+retained. Ambiguous settings stop setup. Existing default `cu-work mcp` entries
+from our renderer can be migrated; custom commands require deliberate resolution.
+
+Runtime files live under `~/.local/share/clickup-skills/` by default
+(`CLICKUP_SKILLS_HOME` overrides this). Each update creates a new runtime; older
+runtimes are retained so other clients and running sessions keep their paths.
+No global npm install, administrator privileges, shell profile edits, or environment
+activation are needed. Installed MCP commands never depend on the npx cache.
+
+Use `npx --yes github:randrescastaneda/clickup-skills cup init` and then `cup auth`
+through the same prefix for personal ClickUp authentication. Use `gh auth login`
+for GitHub. The installer never reads or stores tokens. A machine-local setup is
+not shared by committing a project binding, nor does it enable native integration.
+
+The older scripts below remain useful for custom settings, OpenCode, Posit
+Assistant, and the REST profile. They print configuration rather than merging it.
+
 ## Configuration matrix
 
 Run `python3 scripts/configure.py --client CLIENT --profile official` to print

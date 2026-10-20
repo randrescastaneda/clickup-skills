@@ -104,13 +104,17 @@ def client_setups():
     destinations = {"claude": "Use the marketplace plugin; it supplies its default MCP servers and skills.", "codex": "Merge the printed TOML into your Codex config.toml under [mcp_servers.*].", "copilot": "Merge the output into ~/.copilot/mcp-config.json or the installed harness's supported project .mcp.json.", "kilo": "Merge into the current Kilo .kilo/kilo.jsonc or existing kilo.jsonc, under mcp. Older extensions need their own legacy settings.", "opencode": "Install portable skills; verify your OpenCode version's MCP settings before adopting the portable manifest.", "posit": "Merge into .posit/assistant/settings.json under mcpServers. Configure skills using the installed Assistant's supported mechanism.", "vscode": "Merge into .vscode/mcp.json under servers. This does not configure a separate Copilot CLI session."}
     setups = {}
     for name, text in destinations.items():
-        if name == "claude":
-            commands = "/plugin marketplace add randrescastaneda/clickup-skills\n/plugin install clickup-skills@clickup-skills-marketplace"
+        automatic = name in ("claude", "codex", "copilot", "kilo", "vscode")
+        if automatic:
+            commands = f"npx --yes github:randrescastaneda/clickup-skills setup --client {name}"
+            if name == "vscode":
+                commands += " --project-dir /absolute/path/to/project"
+            text = "One command installs the Python environment, Krodak CLI, five skills, and MCP settings. Reload the agent and complete personal sign-ins."
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
             commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile default"
         config = json.loads((ROOT / "profiles/default.json").read_text(encoding="utf-8"))
-        setups[name] = {"text": text, "commands": commands, "config": render_config(name if name in CONFIG_CLIENTS else "portable", config), "skills": "Personal skill path: ~/" + SKILL_PATHS[name][0] if name in SKILL_PATHS else "No automated skill installer target for this client; confirm its supported skill discovery. For Copilot in VS Code, use the copilot skill installer."}
+        setups[name] = {"text": text, "commands": commands, "automatic": automatic, "config": render_config(name if name in CONFIG_CLIENTS else "portable", config), "skills": "Project skills: .github/skills/" if name == "vscode" else "Personal skill path: ~/" + SKILL_PATHS[name][0] if name in SKILL_PATHS else "No automated skill installer target for this client; confirm its supported skill discovery."}
     return setups
 
 
