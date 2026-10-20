@@ -9,3 +9,4 @@ dist/
 !.env.example
 .clickup/local/
 node_modules/
+release-metadata.json

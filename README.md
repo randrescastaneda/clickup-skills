@@ -1,5 +1,7 @@
 # ClickUp Skills
 
+[Documentation and team setup](https://randrescastaneda.github.io/clickup-skills/) · [Agent usage examples](https://randrescastaneda.github.io/clickup-skills/examples.html)
+
 Give coding agents one project objective and ClickUp task scope, then keep their
 implementation, subtasks, progress, and GitHub PRs connected to that scope.
 
@@ -40,7 +42,7 @@ gh auth login
 
 Use a virtual environment or `pipx` if your system Python is externally managed.
 Keep the `cu-work` executable on the PATH inherited by your coding agent.
-This repository is private: teammates need GitHub read access to clone/install it.
+This repository is public. Each teammate still needs access to the working GitHub repository and ClickUp Workspace.
 
 Claude Code:
 
