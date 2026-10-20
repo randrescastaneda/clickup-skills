@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "name": "Example analytics project",
+  "objective": "Deliver the approved dashboard with verified data and documented limitations.",
+  "clickup": {
+    "workspace_id": "1234567",
+    "list_id": "901234567890",
+    "root_task_ids": ["86example"]
+  },
+  "github": {
+    "repository": "your-team/your-project",
+    "base_branch": "main",
+    "status_map": {
+      "in_progress": "in progress",
+      "review": "in review",
+      "done": "complete"
+    },
+    "require_checks": true
+  },
+  "routing": {
+    "runtime": "cup",
+    "cup_profile": "work",
+    "prefer": [],
+    "overrides": {
+      "task.context": ["context-mcp", "cup", "rest-mcp", "official"]
+    }
+  }
+}

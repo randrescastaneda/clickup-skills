@@ -1,0 +1,9 @@
+{
+  "reviewed": "2026-10-19",
+  "projects": [
+    {"repository": "krodak/clickup-cli", "commit": "a775de5c310ac42b27d565c774e8bd553c30a5c2", "package": "@krodak/clickup-cli", "version": "1.46.2", "license": "MIT", "use": "Primary CLI dependency; command examples adapted from skills/clickup-cli/SKILL.md", "notice": "third_party/krodak/LICENSE"},
+    {"repository": "hauptsacheNet/clickup-mcp", "commit": "d60f89e2eee365ae4a7a4ad4e9cc6662b2c6205d", "package": "@hauptsache.net/clickup-mcp", "version": "1.9.0", "license": "MIT", "use": "Optional rich-context host MCP profile", "notice": "third_party/hauptsacheNet/LICENSE"},
+    {"repository": "joelpt/clickup-mcp", "commit": "b4ee509565dd52cd01a43c5937cad8fee659e62d", "package": "clickup-rest-mcp", "version": "2026.10.15.1", "license": "MIT", "use": "Optional executable local MCP backend and host MCP profile", "notice": "third_party/joelpt/LICENSE"},
+    {"repository": "clickup/clickup-plugin", "commit": "1f40631e03a8d3b393ad67a39eaae599fe9669c9", "license": "MIT", "use": "Packaging and official hosted MCP configuration reference", "notice": "third_party/clickup/LICENSE"}
+  ]
+}

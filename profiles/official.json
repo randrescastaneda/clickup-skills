@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "clickup_work": {
+      "type": "stdio",
+      "command": "cu-work",
+      "args": [
+        "mcp"
+      ]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "clickup_official": {
+      "type": "http",
+      "url": "https://mcp.clickup.com/mcp"
+    }
+  }
+}

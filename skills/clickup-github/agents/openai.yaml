@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clickup Github"
+  short_description: "Link tasks, issues, PRs, and discussions"
+  default_prompt: "Use $clickup-github to link this task to GitHub and reconcile its discussions and evidence."

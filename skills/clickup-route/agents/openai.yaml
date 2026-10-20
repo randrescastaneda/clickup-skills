@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clickup Route"
+  short_description: "Choose an efficient ClickUp tool"
+  default_prompt: "Use $clickup-route to choose the available CLI or MCP for this operation."

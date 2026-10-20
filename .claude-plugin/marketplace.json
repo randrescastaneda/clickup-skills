@@ -1,0 +1,14 @@
+{
+  "name": "clickup-skills-marketplace",
+  "owner": {
+    "name": "Andres Castaneda"
+  },
+  "plugins": [
+    {
+      "name": "clickup-skills",
+      "source": "./",
+      "version": "0.1.0",
+      "description": "Project-bound ClickUp workflows with CLI/MCP routing and GitHub PR linkage."
+    }
+  ]
+}
