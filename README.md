@@ -33,12 +33,18 @@ with each teammate's own accounts; do not share a token through this repository.
 git clone https://github.com/randrescastaneda/clickup-skills.git
 cd clickup-skills
 python3 -m pip install -e .
-npm install -g @krodak/clickup-cli@1.46.2
+npm install -g @krodak/clickup-cli@latest
 cup init
 cup auth
 # Install GitHub CLI through its official distribution, then:
 gh auth login
 ```
+
+The CLI follows the publisher’s `latest` release tag when installed or updated.
+Existing installations do not update themselves: ask your setup agent to rerun
+`npm install -g @krodak/clickup-cli@latest`, check `cup --version`, and verify a
+read of the bound task before resuming writes. The version in `upstreams.lock.json`
+is a reviewed compatibility baseline, not a restriction on CLI upgrades.
 
 Use a virtual environment or `pipx` if your system Python is externally managed.
 Keep the `cu-work` executable on the PATH inherited by your coding agent.

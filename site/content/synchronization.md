@@ -23,7 +23,7 @@ An explicit repository target works for planning, but it has no issue/PR discuss
 
 GitHub issue comments, PR conversation comments, submitted reviews, and inline review comments can be imported into ClickUp. The local helper exports **top-level ClickUp comments** to GitHub. Source URLs, event identities, and content revisions travel with the snapshots. Edited source text produces a new revision; deletions are not propagated.
 
-The pinned local ClickUp backends expose one page. At 25 comments, the helper stops rather than assume a complete history. Use a host MCP with explicit pagination for longer histories and threaded replies. Pending/unsubmitted GitHub reviews are not available until GitHub exposes them.
+The reviewed local ClickUp backends expose one page. At 25 comments, the helper stops rather than assume a complete history. Use a host MCP with explicit pagination for longer histories and threaded replies. Pending/unsubmitted GitHub reviews are not available until GitHub exposes them.
 
 **Arbitrary fields, assignees, labels and status are not synchronized in both directions.** The task objective and acceptance remain authoritative in ClickUp; code, reviews, CI and merge state remain authoritative in GitHub. Mirrored discussion keeps the source comment authoritative.
 

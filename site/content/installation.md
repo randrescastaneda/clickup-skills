@@ -23,7 +23,7 @@ One person may hold several roles. Shared setup does not sign in other teammates
 
 ## 1. Prepare personal tools
 
-For the local helper path, install Python 3.11+, Node 22+, Git, and the GitHub CLI in the environment where the agent runs. The agent must inherit a PATH containing `cu-work`, `cup`, and `gh`. Install the pinned ClickUp CLI from the reviewed dependency lock.
+For the local helper path, install Python 3.11+, Node 22+, Git, and the GitHub CLI in the environment where the agent runs. The agent must inherit a PATH containing `cu-work`, `cup`, and `gh`. Install the ClickUp CLI using the publisher’s `latest` release tag. The recorded version in the dependency review file documents the reviewed baseline; it does not restrict installations to that version.
 
 <details open markdown="1"><summary>Installation steps for your setup agent</summary>
 
@@ -36,7 +36,7 @@ source .venv/bin/activate
 # Windows PowerShell instead:
 # .venv\Scripts\Activate.ps1
 python -m pip install -e .
-npm install -g @krodak/clickup-cli@{{cup_version}}
+npm install -g {{cup_install_spec}}
 cup init
 cup auth
 # Install GitHub CLI from https://cli.github.com/ first, then:
@@ -91,7 +91,11 @@ Ask your setup agent to update the plugin checkout with a fast-forward pull, rev
 ```bash
 git pull --ff-only
 python3 scripts/install_skills.py --client codex --update
+npm install -g {{cup_install_spec}}
+cup --version
 ```
+
+The npm command installs or upgrades to the release currently tagged `latest`; it does not start an automatic updater. Ask the agent to read the bound task after an upgrade and confirm compatibility before task writes. If a new release is incompatible, report the failure and deliberately select a known working version. Do not update executables in the middle of a task write.
 
 Replace `codex` with the installed client. For Claude marketplace installations, use the client’s plugin update flow instead. Reload the agent, review profile/dependency changes, and repeat the discovery check. **Website redeployment does not update teammates’ installed tools.**
 
