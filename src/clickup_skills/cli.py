@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -94,8 +95,13 @@ def dispatch(args):
         return {"project": ctx.config, "active_task_id": ctx.task_id(), "binding_digest": ctx.fingerprint,
                 "local_state": str(ctx.local / "state.json")}
     if args.command == "doctor":
+        executables = {name: bool(shutil.which(name)) for name in ("cup", "gh", "clickup-rest-mcp")}
+        if os.environ.get("CU_WORK_CUP_COMMAND"):
+            command = json.loads(os.environ["CU_WORK_CUP_COMMAND"])
+            executables["cup"] = bool(isinstance(command, list) and command and all(isinstance(v, str) for v in command)
+                                      and shutil.which(command[0]) and (len(command) < 2 or Path(command[1]).is_file()))
         return {"binding_valid": True, "runtime": ctx.config["routing"]["runtime"],
-                "executables": {name: bool(shutil.which(name)) for name in ("cup", "gh", "clickup-rest-mcp")},
+                "executables": executables,
                 "credentials": "Not inspected or printed. Run cup auth / gh auth status separately.",
                 "remote_verified": False}
     work = Workflow(ctx)

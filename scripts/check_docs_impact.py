@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-BEHAVIOR = ("src/", "skills/", "profiles/", "scripts/configure.py", "scripts/install_skills.py", "scripts/build_metadata.py", "plugin.json", "mcp.json", ".claude-plugin/", "pyproject.toml", "upstreams.lock.json")
+BEHAVIOR = ("src/", "skills/", "profiles/", "bin/", "package.json", "scripts/setup.py", "scripts/run_work.py", "scripts/configure.py", "scripts/install_skills.py", "scripts/build_metadata.py", "plugin.json", "mcp.json", ".claude-plugin/", "pyproject.toml", "upstreams.lock.json")
 GUIDES = {"site/content/installation.md", "site/content/project-setup.md", "site/content/using-the-plugin.md", "site/content/examples.md", "site/content/synchronization.md", "site/content/troubleshooting.md", "docs/clients.md", "docs/contract.md", "docs/wiki/github-clickup.md"}
 
 

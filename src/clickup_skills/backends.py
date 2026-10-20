@@ -124,7 +124,13 @@ class ClickUp:
         self.mcp.close()
 
     def cup(self, args):
-        prefix = ["cup", "--json"]
+        try:
+            command = json.loads(os.environ.get("CU_WORK_CUP_COMMAND", '["cup"]'))
+        except json.JSONDecodeError as exc:
+            raise WorkError("Invalid managed cup command. Rerun ClickUp Skills setup.") from exc
+        if not isinstance(command, list) or not command or not all(isinstance(v, str) and v for v in command):
+            raise WorkError("Invalid managed cup command. Rerun ClickUp Skills setup.")
+        prefix = command + ["--json"]
         profile = self.context.config["routing"].get("cup_profile")
         if profile:
             prefix += ["--profile", profile]

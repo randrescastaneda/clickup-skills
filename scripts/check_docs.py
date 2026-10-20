@@ -73,13 +73,16 @@ def main():
     assert "Each teammate" in installation and "Project lead" in installation
     lock = json.loads((ROOT / "upstreams.lock.json").read_text(encoding="utf-8"))
     cup = next(p for p in lock["projects"] if p.get("package") == "@krodak/clickup-cli")
-    command = "npm install -g " + cup["install_spec"]
+    assert cup["install_spec"] in installation
+    command = "npx --yes github:randrescastaneda/clickup-skills setup --client kilo"
     assert command in installation and command in (ROOT / "README.md").read_text(encoding="utf-8")
     assert "npm install -g " + cup["package"] + "@" + cup["version"] not in installation
     setups = json.loads((output / "client-setups.json").read_text(encoding="utf-8"))
     config = json.loads((ROOT / "profiles/default.json").read_text(encoding="utf-8"))
     for client, data in setups.items():
         assert data["config"] == render_config(client if client in CONFIG_CLIENTS else "portable", config)
+        if data["automatic"]:
+            assert "setup --client " + client in data["commands"] and "scripts/" not in data["commands"]
     index = json.loads((output / "search-index.json").read_text(encoding="utf-8"))
     assert {p["url"] for p in index} == {p + ".html" for p in manifest["pages"]}
     assert all(p["title"] and len(p["text"]) > 40 for p in index)

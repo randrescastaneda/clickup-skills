@@ -64,10 +64,10 @@
         const setups = await setupPromise; if (selected !== client.value) return;
         const data = setups[selected]; target.replaceChildren();
         for (const text of [data.text, data.skills]) { const p = document.createElement('p'); p.textContent = text; target.append(p); }
-        const label = document.createElement('p'); label.className = 'micro-label'; label.textContent = 'RUN IN THE PLUGIN INSTALL CHECKOUT'; target.append(label);
+        const label = document.createElement('p'); label.className = 'micro-label'; label.textContent = data.automatic ? 'RUN FROM ANY DIRECTORY' : 'ADVANCED: RUN IN THE PLUGIN CHECKOUT'; target.append(label);
         const pre = document.createElement('pre'); const code = document.createElement('code'); code.textContent = data.commands; pre.append(code); target.append(pre); addCopy(pre);
         if (selected !== 'claude') {
-          const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Preview the generated default MCP configuration';
+          const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Advanced: base MCP schema (setup supplies persistent command paths)';
           const configPre = document.createElement('pre'); const configCode = document.createElement('code'); configCode.textContent = data.config; configPre.append(configCode); details.append(summary,configPre); target.append(details); addCopy(configPre);
         }
       } catch { target.textContent = 'Setup snippets could not load. Open the Client setup matrix in the sidebar for all commands.'; }

@@ -9,7 +9,7 @@ Start with the actual agent session and working repository. Authentication in an
 
 | Symptom | What to check / ask the agent |
 | --- | --- |
-| `cu-work` is missing | Install the Python package in the agent’s environment; activate its venv or set the absolute executable path |
+| `cu-work` is missing | With npx setup, use the installed workflow MCP or the managed `npx --yes github:randrescastaneda/clickup-skills work` proxy. A global `cu-work` command is only expected for the advanced manual install |
 | The plugin installed but tasks cannot be read | Verify personal ClickUp sign-in, the actual Workspace/List access and available runtime |
 | Skills are not discovered | Use the actual agent’s discovery path, reload the session, and add the project instruction; avoid duplicate copies |
 | MCP config is rejected | Choose the correct renderer: VS Code, Copilot, Codex, Kilo and Posit use different shapes |

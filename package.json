@@ -1,0 +1,12 @@
+{
+  "name": "@randrescastaneda/clickup-skills",
+  "version": "0.1.0",
+  "description": "One-command setup for the Python ClickUp agent workflows and Krodak CLI",
+  "license": "MIT",
+  "repository": {"type": "git", "url": "https://github.com/randrescastaneda/clickup-skills.git"},
+  "homepage": "https://randrescastaneda.github.io/clickup-skills/",
+  "bin": {"clickup-skills": "bin/clickup-skills.mjs"},
+  "engines": {"node": ">=22"},
+  "files": ["bin/", "scripts/setup.py", "scripts/install_skills.py", "scripts/run_work.py", "src/**/*.py", "profiles/", "skills/", "third_party/", "pyproject.toml", "THIRD_PARTY_NOTICES.md"],
+  "publishConfig": {"access": "public"}
+}

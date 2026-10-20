@@ -27,6 +27,24 @@ child/backlink writes, explicit repository targets, changed-input rejection,
 issue body preservation, two-way comment snapshots, edits, host provenance,
 GitHub pagination/review types, and incomplete ClickUp-history rejection.
 
+## Packaged installer validation — 20 October 2026
+
+The suite now includes isolated installation and update checks with a fixture npm
+CLI. These verify preservation of JSONC comments, unrelated settings and servers,
+managed TOML updates, legacy default-config migration, skill conflicts, failed
+dependency installs, repeated setup, and subprocess arguments containing spaces.
+An actual npm archive is unpacked and installed, then its downloaded source is
+deleted before the persistent MCP initializes and lists all nine workflow tools.
+No API accounts are used by these offline tests.
+
+A separate Linux smoke install fetched `@krodak/clickup-cli@latest` from npm,
+verified its installed version (1.46.2 at test time), created the Python environment,
+copied five skills, and wrote project-scoped Kilo configuration in an isolated
+directory. This version is observed evidence, not an installation pin. No real
+ClickUp/GitHub account authentication or task writes were performed in this test.
+Installed editor discovery and authenticated client behavior remain live team
+acceptance steps. The CI matrix runs Python 3.12 and Node 22 on Linux/macOS/Windows.
+
 ## First live pilot
 
 Choose a disposable or team-approved test task before broad rollout. Each
