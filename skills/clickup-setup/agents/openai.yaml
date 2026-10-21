@@ -1,0 +1,4 @@
+interface:
+  display_name: "ClickUp Setup"
+  short_description: "Install and verify skills, runtimes and MCP"
+  default_prompt: "Use $clickup-setup to install or finish setting up ClickUp Skills for my coding agent, preserving existing settings and skill installations."
