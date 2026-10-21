@@ -28,7 +28,7 @@ ClickUp Skills is a workflow plugin for coding agents. It supplies {{skill_count
 
 | You and your team | Your agent |
 | --- | --- |
-| Install the tools once per teammate; approve account access | Discover installed skills and available tools |
+| Install skills and runtime once per teammate; approve account access | Discover installed skills and available tools |
 | Choose the objective, repository, and ClickUp task | Verify scope before making task changes |
 | Define acceptance criteria and review the result | Link subtasks, report progress, and provide evidence |
 | Configure optional native integrations | Reconcile discussions when asked or at session boundaries |
