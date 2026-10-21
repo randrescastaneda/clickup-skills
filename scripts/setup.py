@@ -256,7 +256,8 @@ def setup(args, home):
     original = destination.read_bytes() if destination.exists() else None
     text = original.decode("utf-8") if original is not None else ("" if args.client == "codex" else "{}\n")
     skills = skill_directory("copilot" if args.client == "vscode" else args.client, project_dir=project)
-    install(skills, update=True, dry_run=True)
+    if not args.skip_skills:
+        install(skills, update=True, dry_run=True)
     active = read_json(home / "installation.json", {})
     digest = source_digest(node)
     runtime = Path(active.get("runtime", home / "pending-runtime"))
@@ -271,7 +272,8 @@ def setup(args, home):
     merged, owned = merge_config(text, args.client, desired_config(args.client, args.profile, runtime), receipt.get("servers", {}))
     if (destination.read_bytes() if destination.exists() else None) != original:
         raise ValueError("Client settings changed during setup. Rerun; your settings were preserved.")
-    install(skills, update=True)
+    if not args.skip_skills:
+        install(skills, update=True)
     if merged != text:
         if original is not None:
             backup = destination.with_name(destination.name + ".clickup-skills-backup-" + uuid.uuid4().hex[:12])
@@ -280,7 +282,7 @@ def setup(args, home):
         atomic_write(destination, merged)
     save_json(receipt_path, {"config": str(destination), "servers": owned})
     save_json(home / "installation.json", {"runtime": str(runtime)})
-    print("\nSetup complete: Python environment, Krodak CLI, five skills, and MCP configuration.")
+    print("\nSetup complete: Python environment, Krodak CLI, " + ("external skills unchanged" if args.skip_skills else "managed skills") + ", and MCP configuration.")
     print("Client settings: " + str(destination))
     print("Reload your agent. Each teammate signs in with their own accounts:")
     print("  " + NPX + " cup init")
@@ -304,6 +306,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, epilog="Also: cup <arguments> or work <cu-work arguments> after setup.")
     parser.add_argument("command", choices=["setup", "update"])
     parser.add_argument("--client", choices=CLIENTS, required=True)
+    parser.add_argument("--skip-skills", action="store_true", help="Leave externally installed skills untouched (e.g. npx skills add)")
     parser.add_argument("--profile", choices=["default", "official", "context"], default="default")
     parser.add_argument("--project-dir", type=Path, help="Install project skills and config instead of personal settings")
     setup(parser.parse_args(args), home)
