@@ -127,7 +127,7 @@ class PackagedInstallTests(unittest.TestCase):
         metadata = json.loads((runtime / "runtime.json").read_text())
         self.assertEqual(metadata["cup_version"], "9.0.0-test")
         self.assertIn("// preserve", first)
-        self.assertEqual(len(list(self.project.glob(".kilo/skills/*/SKILL.md"))), 5)
+        self.assertEqual(len(list(self.project.glob(".kilo/skills/*/SKILL.md"))), 6)
         self.assertEqual(len(list(settings.parent.glob("*.clickup-skills-backup-*"))), 1)
         self.run_setup()
         self.assertEqual(settings.read_text(), first)
@@ -142,6 +142,23 @@ class PackagedInstallTests(unittest.TestCase):
         cup = subprocess.run([sys.executable, "-I", str(ROOT / "scripts/setup.py"), "cup", "--version"],
                              env=self.env, capture_output=True, text=True, check=True)
         self.assertIn("9.0.0-test", cup.stdout)
+
+    def test_skip_skills_preserves_external_installation(self):
+        skill = self.project / '.kilo/skills/clickup-route/SKILL.md'
+        skill.parent.mkdir(parents=True)
+        skill.write_text('Vercel-managed independent copy', encoding='utf-8')
+        result = subprocess.run(
+            [sys.executable, '-I', str(ROOT / 'scripts/setup.py'), 'setup', '--client', 'kilo',
+             '--project-dir', str(self.project), '--skip-skills'],
+            env=self.env, capture_output=True, text=True, encoding='utf-8', check=True)
+        self.assertIn('external skills unchanged', result.stdout)
+        self.assertEqual(skill.read_text(encoding='utf-8'), 'Vercel-managed independent copy')
+        self.assertFalse((self.project / '.kilo/skills/clickup-github').exists())
+        self.assertTrue((self.project / '.kilo/kilo.jsonc').is_file())
+        result = subprocess.run([sys.executable, '-I', str(ROOT / 'scripts/setup.py'), 'update',
+                '--client', 'kilo', '--project-dir', str(self.project), '--skip-skills'],
+                env=self.env, capture_output=True, text=True, encoding='utf-8', check=True)
+        self.assertEqual(skill.read_text(encoding='utf-8'), 'Vercel-managed independent copy')
 
     def test_failed_dependency_install_does_not_change_settings_or_skills(self):
         settings = self.project / ".kilo/kilo.jsonc"
@@ -181,7 +198,7 @@ class PackagedInstallTests(unittest.TestCase):
         self.assertIn("scripts/run_work.py", names)
         self.assertIn("profiles/default.json", names)
         self.assertIn("third_party/krodak/LICENSE", names)
-        self.assertEqual(len([n for n in names if n.startswith("skills/") and n.endswith("/SKILL.md")]), 5)
+        self.assertEqual(len([n for n in names if n.startswith("skills/") and n.endswith("/SKILL.md")]), 6)
         self.assertFalse(any("__pycache__" in n or n.startswith(("tests/", ".git/")) or n.endswith(".pyc") for n in names))
         unpacked = self.root / "downloaded"
         with tarfile.open(self.root / packed["filename"]) as archive:
