@@ -139,7 +139,7 @@ not the local `cup` adapter or helper journal. Label those results separately.
 ## Agent handoff prompt
 
 Use the ClickUp skills from randrescastaneda/clickup-skills at
-feat/clickup-project-workflows for a bounded integration pilot. Target
+main for a bounded integration pilot. Target
 PIP-Technical-Team/wbpip, base PROD, and task
 https://app.clickup.com/t/37469623/868mjzgzh. Start with an authenticated task
 read, verify the true workspace/list/objective, and follow the sequence in

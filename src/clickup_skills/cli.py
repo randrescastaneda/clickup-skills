@@ -23,6 +23,7 @@ def parser():
     init.add_argument("--base-branch", default="main")
     init.add_argument("--runtime", choices=["cup", "rest-mcp"], default="cup")
     init.add_argument("--cup-profile")
+    init.add_argument("--comment-reader", choices=["upstream", "clickup-api"], default="upstream")
     sub.add_parser("context")
     sub.add_parser("doctor")
     r = sub.add_parser("route")
@@ -55,11 +56,23 @@ def parser():
     group = reconcile.add_mutually_exclusive_group(required=True)
     group.add_argument("--result-file", type=Path)
     group.add_argument("--not-applied", action="store_true")
+    worker = sub.add_parser("sync-worker", help="Preview or poll comment sync for explicit tasks; never starts during setup")
+    worker.add_argument("--task", action="append", required=True, help="Native task ID; repeat for each allowed task")
+    worker.add_argument("--direction", choices=["both", "to-clickup", "to-github"], default="both")
+    worker.add_argument("--apply", action="store_true", help="Allow the existing scoped comment writes; default only previews")
+    worker.add_argument("--watch", action="store_true", help="Continue polling until stopped; requires --apply")
+    worker.add_argument("--interval", type=int, default=300, help="Seconds after each pass, minimum 60")
+    worker.add_argument("--max-writes", type=int, default=20, help="Total new mirrors allowed per pass, maximum 100")
     sub.add_parser("mcp", help="Serve task-scoped workflow tools over stdio")
     return p
 
 
 def dispatch(args):
+    if args.command == "sync-worker":
+        from .worker import run_worker
+        return run_worker(args.project_dir, args.task, args.direction, apply=args.apply,
+                          watch=args.watch, interval=args.interval, max_writes=args.max_writes,
+                          emit=(lambda report: print(json.dumps(report), flush=True)) if args.watch else None)
     if args.command == "mcp":
         from .mcp import serve
         serve()
@@ -75,6 +88,7 @@ def dispatch(args):
                            "github": {"repository": args.repository, "base_branch": args.base_branch,
                                       "status_map": {}, "require_checks": True},
                            "routing": {"runtime": args.runtime, "cup_profile": args.cup_profile,
+                                       "comment_reader": args.comment_reader,
                                        "prefer": [], "overrides": {}}})
         from .context import remote_repository
         if remote_repository(git(root, "remote", "get-url", "origin")).lower() != args.repository.lower():
@@ -101,6 +115,7 @@ def dispatch(args):
             executables["cup"] = bool(isinstance(command, list) and command and all(isinstance(v, str) for v in command)
                                       and shutil.which(command[0]) and (len(command) < 2 or Path(command[1]).is_file()))
         return {"binding_valid": True, "runtime": ctx.config["routing"]["runtime"],
+                "comment_reader": ctx.config["routing"].get("comment_reader", "upstream"),
                 "executables": executables,
                 "credentials": "Not inspected or printed. Run cup auth / gh auth status separately.",
                 "remote_verified": False}

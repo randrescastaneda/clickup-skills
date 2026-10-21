@@ -48,7 +48,13 @@ deletions, arbitrary fields, and status are not mirrored automatically.
 
 Read [synchronization rules](references/synchronization.md) for long comment
 histories, threaded replies, missing targets, partial failures, and native setup.
-Use the repository's [team setup wiki](https://github.com/randrescastaneda/clickup-skills/blob/feat/clickup-project-workflows/docs/wiki/github-clickup.md)
+Use the repository's [team setup wiki](https://github.com/randrescastaneda/clickup-skills/blob/main/docs/wiki/github-clickup.md)
 for exact native connection and automation steps. MCP authentication alone does
-not enable those integrations. Do not claim continuous synchronization: the
-helper runs only when called; native integration/automations need separate setup.
+not enable those integrations. Session tools do not start continuous sync.
+An optional `sync-worker` can poll an explicit task allowlist on one authenticated
+machine; it defaults to a read-only preview and needs `--apply --watch` to keep
+running. It stops on incomplete history or uncertain writes. Its current
+default reader stops at 25 comments; an explicit clickup-api comment reader
+provides GET-only pagination while writes stay on the upstream runtime. See the
+[worker guide](https://github.com/randrescastaneda/clickup-skills/blob/main/docs/sync-worker.md).
+Native integration/automations still need separate setup.

@@ -16,6 +16,7 @@ This repository supplies the shared workflow, rather than another broad API wrap
 | Five portable skills | Bind a project, route tools, work a task, link GitHub, resume/handoff |
 | `cu-work` CLI | Verify scope, create GitHub-associated subtasks, link issues/PRs, sync discussions, and gate completion |
 | `clickup_work` MCP | The same nine scoped workflow tools for MCP-capable agents |
+| Optional `sync-worker` | Preview or poll comments for explicit linked tasks on one authenticated machine |
 | Claude Code marketplace + portable/Codex manifests | Team installation from this repository |
 | Copilot, Kilo, VS Code, and Posit adapters | Render each client's own MCP format from the same profiles |
 | Optional MCP profiles | Official ClickUp, rich-context community MCP, and REST community MCP |
@@ -268,6 +269,17 @@ Native integration is available on all ClickUp plans; GitHub Automation
 integrations require Business or above. Free MCP software does not remove plan
 limits. No OAuth integration, webhook, background worker, merge, or deployment
 is installed automatically.
+
+An optional [comment-sync worker](docs/sync-worker.md) can poll explicitly listed
+tasks when agents are offline. It defaults to a read-only preview; `--apply
+--watch` starts bounded polling on the authenticated machine. No service starts
+during setup. Default upstream readers stop at 25 comments. An explicit
+`routing.comment_reader = clickup-api` override provides complete, GET-only
+comment pagination with private environment credentials; writes keep using
+the selected CLI/MCP. Live worker acceptance remains unfinished.
+
+Current delivered behavior and rollout gaps are recorded in
+[project decisions](docs/project-decisions.md).
 
 ## Verify and contribute
 

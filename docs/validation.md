@@ -45,7 +45,37 @@ ClickUp/GitHub account authentication or task writes were performed in this test
 Installed editor discovery and authenticated client behavior remain live team
 acceptance steps. The CI matrix runs Python 3.12 and Node 22 on Linux/macOS/Windows.
 
-## First live pilot
+## Worker and rollout preparation — 21 October 2026
+
+The offline suite now contains 96 passing tests. The optional polling worker has checks for explicit task scope, a
+read-only preview, preflight across every task/target before writing, per-pass
+write limits, binding changes, echo suppression and repeat runs. Tests lose
+responses after successful writes on each service and verify marker-based
+recovery without duplicates; absent remote evidence blocks replay. Old sync
+receipts remain recoverable. Two ClickUp tasks sharing a PR have separate new
+receipt keys while preserving the canonical source provenance.
+
+OS-lock tests use an actual competing process, kill it, and verify the lock is
+released. Linked worktrees share the same writer lock; separate clones and
+machines still need one agreed owner per task. The packaged installer test
+deletes the downloaded source, initializes the persistent MCP, and loads the
+worker's command help. No editor or live account is involved in these checks.
+
+Additional fixtures cover exact plain issue-comment endpoints and literal
+multiline file inputs, malformed paginated records, inline review replies, and
+excluding pending/unsubmitted reviews. These establish offline behavior only.
+
+The reviewed upstream sources were rechecked: `cup comments` and REST MCP
+`list_comments` still expose one page. The worker refuses a pass that would
+reach 25 ClickUp comments with those default readers. The explicit
+clickup-api comment-reader override adds GET-only cursor pagination, with
+fixtures for multiple pages, inclusive overlap, equal timestamps, malformed or
+stalled cursors, redirect rejection, and credential/error isolation. Task reads
+and all writes still use the configured upstream runtime. No live worker service,
+credentials, native connection, or automation was installed.
+See [the worker guide](sync-worker.md) for its current boundaries and recovery.
+
+## Live rollout acceptance
 
 Choose a disposable or team-approved test task before broad rollout. Each
 teammate authenticates their own tools. Configure the real workspace/list/root

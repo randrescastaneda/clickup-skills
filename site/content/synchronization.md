@@ -23,15 +23,15 @@ An explicit repository target works for planning, but it has no issue/PR discuss
 
 GitHub issue comments, PR conversation comments, submitted reviews, and inline review comments can be imported into ClickUp. The local helper exports **top-level ClickUp comments** to GitHub. Source URLs, event identities, and content revisions travel with the snapshots. Edited source text produces a new revision; deletions are not propagated.
 
-The reviewed local ClickUp backends expose one page. At 25 comments, the helper stops rather than assume a complete history. Use a host MCP with explicit pagination for longer histories and threaded replies. Pending/unsubmitted GitHub reviews are not available until GitHub exposes them.
+The default local ClickUp commands expose one page. At 25 comments, the helper stops rather than assume a complete history. An explicit `routing.comment_reader = clickup-api` override provides GET-only cursor pagination using private environment credentials; writes remain on the selected upstream runtime. See the [worker guide](sync-worker.html) for setup. Use host tools for threaded replies. Pending/unsubmitted GitHub reviews are not available until GitHub exposes them.
 
 **Arbitrary fields, assignees, labels and status are not synchronized in both directions.** The task objective and acceptance remain authoritative in ClickUp; code, reviews, CI and merge state remain authoritative in GitHub. Mirrored discussion keeps the source comment authoritative.
 
 ## When synchronization runs
 
-The helper runs when called. Skills ask agents to reconcile at session start and handoff; you can also request it explicitly. It is not an always-on worker. Native activity links can continue when agents are offline; native automations handle only the events and rules an admin configured.
+Session tools run when called. Skills ask agents to reconcile at session start and handoff; you can also request it explicitly. An optional [sync worker](sync-worker.html) can poll an explicit set of tasks on an authenticated machine. It defaults to a read-only preview; setup does not start a service. Native activity links can continue when agents are offline; native automations handle only the events and rules an admin configured.
 
-Teams needing continuous bidirectional comment copying must deploy a separate authenticated event worker or scheduler with durable receipts, one writer per task, scope checks and echo suppression. This package does not install one.
+The worker uses the existing receipts, scope checks, and echo suppression, with a per-pass write limit and one local repository owner. It stops on uncertain outcomes or a changed binding. The 25-comment boundary remains for default readers; the explicit complete-history reader supports longer discussions. Live worker acceptance and deployment remain unfinished; separate machines still require one agreed writer per task. Arbitrary fields and statuses are not synchronized.
 
 ## Completion is an evidence gate
 

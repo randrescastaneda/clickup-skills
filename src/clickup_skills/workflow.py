@@ -199,19 +199,68 @@ class Workflow:
         return self.once(key, {"operation": "artifact-body", "task_id": task_id,
                                "target": target["url"], "block": block}, apply, recover)
 
-    def sync_comments(self, task_id=None, direction="both"):
-        """Reconcile discussions during a session; never infer status or execute comment text."""
+    def plan_comments(self, task_id=None, direction="both"):
+        """Read every associated discussion before allowing any mirror write."""
         if direction not in ("both", "to-clickup", "to-github"):
             raise WorkError("Choose both, to-clickup, or to-github.")
         task = self.task(task_id)
         task_id = str(task["id"])
         comments = self.backend.comments(task_id)
+        for note in comments:
+            if not isinstance(note.get("comment_text", note.get("text", "")), str):
+                raise WorkError("ClickUp comment text is malformed; refusing reconciliation.")
         targets = [t for t in self.associations(task, comments) if t["kind"] != "repository"]
         if not targets:
             raise WorkError("Link an issue or PR before synchronizing comments; repositories have no task discussion.")
-        results = []
+        operations = []
+        events = set()
+        journal = self.context.state().get("operations", {})
+
+        def add(destination, event, body, target, remote):
+            identity = (destination, event)
+            if identity in events:
+                return
+            events.add(identity)
+            # Separate both task and binding, while preserving matching old receipts.
+            text = self.linked_text(body, task_id, [target])
+            def digest_for(candidate):
+                token = marker(self.context.fingerprint + task_id + candidate)
+                payload = {"operation": "comment" if destination == "clickup" else "github-comment",
+                           "task_id": task_id, "body": text.rstrip() + "\n\n[" + token + "]"}
+                if destination == "github":
+                    payload["target"] = target["url"]
+                return hashlib.sha256(json.dumps([self.context.fingerprint, payload], sort_keys=True).encode()).hexdigest()
+            key = event + ":" + task_id + ":" + self.context.fingerprint[:16]
+            for candidate in (event, event + ":" + task_id):
+                old = journal.get(candidate)
+                if old and old.get("task_id") == task_id and old["digest"] == digest_for(candidate):
+                    key = candidate
+                    break
+            previous = journal.get(key)
+            token = marker(self.context.fingerprint + task_id + key)
+            digest = digest_for(key)
+            if previous and previous["digest"] != digest:
+                raise WorkError("Sync receipt belongs to different inputs or a different binding.")
+            hits = [note for note in remote if "[cu-work-sync:" + event + "]" in
+                    str(note.get("comment_text", note.get("text", ""))) or
+                    "[" + token + "]" in str(note.get("comment_text", note.get("text", "")))]
+            if len(hits) > 1:
+                raise WorkError("Multiple destination comments match a sync event; inspect them.")
+            pending = [old for candidate, old in journal.items() if old.get("task_id") == task_id and
+                       (candidate == event or candidate.startswith(event + ":")) and old["state"] == "pending"]
+            if pending and not hits:
+                raise WorkError("Sync outcome is uncertain; reconcile the pending receipt before continuing.")
+            operations.append({"destination": destination, "key": key, "event": event,
+                               "text": text, "target": target, "remote": remote,
+                               "write_needed": not hits and not (previous and previous["state"] == "done")})
+
         for target in targets:
             notes = self.github.comments(target)
+            if not isinstance(notes, list) or any(not isinstance(note, dict) or
+                    not isinstance(note.get("text"), str) or not note.get("id") or
+                    not isinstance(note.get("url"), str) or not note["url"].startswith(self.github.url + "/")
+                    for note in notes):
+                raise WorkError("GitHub discussion identity/text is malformed; refusing reconciliation.")
             if direction in ("both", "to-clickup"):
                 for note in notes:
                     if "[cu-work:" in note["text"] or "[cu-work-sync:" in note["text"]:
@@ -220,7 +269,7 @@ class Workflow:
                     event = sync_event(["github", target["url"], note["id"], note["text"]])
                     text = ("GitHub comment by " + note.get("author", "unknown") + "\nSource: " + note["url"] +
                             "\n\n" + note["text"] + "\n\n[cu-work-sync:" + event + "]")
-                    results.append(self._comment(self.linked_text(text, task_id, [target]), event, task_id, event))
+                    add("clickup", event, text, target, comments)
             if direction in ("both", "to-github"):
                 for note in comments:
                     text = note.get("comment_text", note.get("text", ""))
@@ -233,10 +282,28 @@ class Workflow:
                               (note.get("user", {}).get("username", "unknown") if isinstance(note.get("user"), dict)
                                else str(note.get("user") or "unknown")) + "\n\n" + text +
                               "\n\n[cu-work-sync:" + event + "]")
-                    results.append(self._github_comment(target, self.linked_text(source, task_id, [target]),
-                                                        event, task_id, notes, event))
+                    add("github", event, source, target, notes)
+        return {"task_id": task_id, "direction": direction, "operations": operations,
+                "comment_count": len(comments),
+                "complete_history": getattr(self.backend, "complete_comment_history", False)}
+
+    def apply_comment_plan(self, plan):
+        self.task(plan["task_id"])
+        results = []
+        for op in plan["operations"]:
+            if op["destination"] == "clickup":
+                results.append(self._comment(op["text"], op["key"], plan["task_id"], op["event"]))
+            else:
+                results.append(self._github_comment(op["target"], op["text"], op["key"], plan["task_id"],
+                                                    provenance=op["event"]))
+        return results
+
+    def sync_comments(self, task_id=None, direction="both"):
+        plan = self.plan_comments(task_id, direction)
+        results = self.apply_comment_plan(plan)
+        task_id = plan["task_id"]
         return {"task_id": task_id, "direction": direction, "operations": results,
-                "note": "Discussion snapshots reconciled. No status changes; no background worker installed."}
+                "note": "Discussion snapshots reconciled. No status changes; this call does not start a worker."}
 
     def pr(self, number):
         if not str(number).isdigit() or int(number) < 1:

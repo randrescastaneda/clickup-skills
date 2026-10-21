@@ -118,6 +118,7 @@ class ClickUp:
     def __init__(self, context):
         self.context = context
         self.runtime = context.config["routing"].get("runtime", "cup")
+        self.complete_comment_history = context.config["routing"].get("comment_reader", "upstream") == "clickup-api"
         self.mcp = StdioMCP()
 
     def close(self):
@@ -147,6 +148,9 @@ class ClickUp:
         return result
 
     def comments(self, task_id):
+        if self.complete_comment_history:
+            from .comments import CommentReader
+            return CommentReader().comments(task_id)
         if self.runtime == "rest-mcp":
             data = self.mcp.call("list_comments", {"task_id": task_id})
             result = data.get("comments") if isinstance(data, dict) else data
