@@ -4,7 +4,11 @@ One set of workflow skills and executables is shared. Discovery paths and MCP
 configuration belong to each agent, even when several agents run in one editor.
 These adapters are based on publisher documentation checked on 2026-10-19.
 
-## Recommended setup
+## Recommended setup: Skills CLI or full installer
+
+For standard Vercel Skills CLI skill management, run `npx skills add randrescastaneda/clickup-skills -g`, then configure the runtime/MCP for the actual agent using `npx --yes github:randrescastaneda/clickup-skills setup --client kilo --skip-skills` (replace `kilo` with the client). `--skip-skills` deliberately leaves the CLI-managed skill copies alone. The Skills CLI does not provision Python, Krodak's CLI, GitHub CLI, or MCP settings. Ask the installed `clickup-setup` skill to guide the remaining work. Update skills through `npx skills check` and `npx skills update -g` (or project-scoped `-p`), and runtime through `npx --yes github:randrescastaneda/clickup-skills update --client kilo --skip-skills`. Do not mix managers for the same skill destination.
+
+Alternatively, the following custom command performs a complete install, managing its own skill copies.
 
 Each teammate runs one command for their client, from any directory:
 
@@ -14,7 +18,7 @@ npx --yes github:randrescastaneda/clickup-skills setup --client kilo
 
 Supported automatic targets are `kilo`, `codex`, `claude`, and `copilot` for
 personal settings, plus `vscode` with `--project-dir /absolute/project`.
-The installer handles the Python environment, Krodak's latest CLI, five skills,
+The installer handles the Python environment, Krodak's latest CLI, six skills,
 and a safe configuration merge. Python 3.11+, Node 22+, and Git remain prerequisites.
 GitHub CLI must also be installed and personally authenticated for local workflows.
 Use `update --client CLIENT` with the same scope to refresh the managed install.
@@ -120,7 +124,7 @@ environment-variable references; renderers never substitute secret values.
 Offline tests validate all seven rendering targets across four profiles, the
 environment-reference syntax, skill paths, repeated installation, collision
 handling, and updates that preserve local changes. Linux/macOS/Windows CI runs
-these checks. An actual installed agent must still discover the five skills,
+these checks. An actual installed agent must still discover the six skills,
 list/call its MCP tools, and complete the live task/PR pilot. Configuration
 contract tests are not a claim that every editor/extension version was opened.
 

@@ -74,6 +74,8 @@ def main():
     lock = json.loads((ROOT / "upstreams.lock.json").read_text(encoding="utf-8"))
     cup = next(p for p in lock["projects"] if p.get("package") == "@krodak/clickup-cli")
     assert cup["install_spec"] in installation
+    assert "npx skills add randrescastaneda/clickup-skills -g" in installation
+    assert "--skip-skills" in installation
     command = "npx --yes github:randrescastaneda/clickup-skills setup --client kilo"
     assert command in installation and command in (ROOT / "README.md").read_text(encoding="utf-8")
     assert "npm install -g " + cup["package"] + "@" + cup["version"] not in installation

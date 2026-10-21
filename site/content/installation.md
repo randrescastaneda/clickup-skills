@@ -21,7 +21,25 @@ One person may hold several roles. Shared setup does not sign in other teammates
 
 **Every teammate authenticates individually.** A maintainer installing the plugin on their laptop does not install it for the team. A shared project binding contains identifiers and an objective, never credentials.
 
-## 1. Run one setup command
+## 1. Install skills with Vercel, then finish runtime setup
+
+For the standard skills installation (personal scope), run:
+
+```bash
+npx skills add randrescastaneda/clickup-skills -g
+```
+
+This installs the six agent skills, including **clickup-setup**, but does **not** install the Python runtime, Krodak's CLI, or MCP configuration. Ask your coding agent to use **clickup-setup** to finish configuration for the agent you actually run. For example, Kilo users run:
+
+```bash
+npx --yes github:randrescastaneda/clickup-skills setup --client kilo --skip-skills
+```
+
+Replace `kilo` with `codex`, `claude`, or `copilot`; use `--client vscode --project-dir /absolute/path/to/project` when configuring project-scoped VS Code MCP. The `--skip-skills` option protects the copies installed by Vercel. Python 3.11+, Node 22+, and Git are prerequisites, and local GitHub workflows also require the GitHub CLI. Each teammate authenticates separately.
+
+If you prefer a *single-command complete installer* instead of the standard Skills CLI, use the alternative below. Do not install skills into the same destination with both managers.
+
+### Alternative: one-command full installation
 
 Have Python 3.11+, Node 22+, and Git installed where the agent runs. Then run:
 
@@ -31,7 +49,7 @@ npx --yes github:randrescastaneda/clickup-skills setup --client kilo
 
 Replace `kilo` with `codex`, `claude`, or `copilot`. Your setup agent can run this for you. **No manual clone, virtual environment, activation, or separate Python scripts.** The command works directly from GitHub; it does not require a separately published npm package.
 
-The installer creates a private Python environment, installs Krodak’s `{{cup_install_spec}}`, copies the five skills, and merges your agent’s MCP settings. It uses personal directories without a global npm install or administrator privileges. Existing settings and JSONC comments are preserved; changed settings receive a private backup. Conflicting MCP entries and locally edited skills stop setup for deliberate resolution.
+The installer creates a private Python environment, installs Krodak’s `{{cup_install_spec}}`, copies the six skills, and merges your agent’s MCP settings. It uses personal directories without a global npm install or administrator privileges. Existing settings and JSONC comments are preserved; changed settings receive a private backup. Conflicting MCP entries and locally edited skills stop setup for deliberate resolution.
 
 The installed MCP command points to a persistent runtime outside the temporary npx cache. You can close the terminal after setup; no environment activation is needed. Install GitHub CLI from [its official distribution](https://cli.github.com/) as well: the local workflow uses `gh` for GitHub operations.
 
@@ -90,7 +108,9 @@ Confirm that an unrelated task is rejected and that a draft/open PR, pending che
 
 ## Keep installations current
 
-Ask your setup agent to refresh the installed client:
+For a Skills CLI-managed installation, use `npx skills check` and `npx skills update -g` (or `npx skills update -p` for project skills), then refresh the independent runtime with `npx --yes github:randrescastaneda/clickup-skills update --client kilo --skip-skills`. The Vercel updater does not upgrade the Python runtime or Krodak's CLI.
+
+For an installation entirely managed by our custom installer, ask your setup agent to refresh the installed client:
 
 ```bash
 npx --yes github:randrescastaneda/clickup-skills update --client kilo
