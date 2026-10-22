@@ -65,7 +65,7 @@ def authenticate_clickup(cup_command: list[str], interactive: bool | None = None
     print("ClickUp: authentication verified.")
 
 
-def authenticate_github(gh_path: str | None = None) -> None:
+def authenticate_github(gh_path: str | None = None, interactive: bool | None = None) -> None:
     """Use gh's browser login only when no valid active GitHub account exists."""
     gh = gh_path or shutil.which("gh")
     if not gh:
@@ -79,7 +79,9 @@ def authenticate_github(gh_path: str | None = None) -> None:
                       stderr=subprocess.DEVNULL).returncode == 0:
         print("\nGitHub: existing authentication verified.")
         return
-    if not sys.stdin.isatty():
+    if interactive is None:
+        interactive = sys.stdin.isatty()
+    if not interactive:
         raise ValueError("GitHub sign-in requires an interactive terminal. Rerun onboard locally.")
     print("\nGitHub: a browser authorization is needed. Follow GitHub CLI's prompts.")
     subprocess.run([gh, "auth", "login", "--hostname", "github.com", "--web"], check=True)
