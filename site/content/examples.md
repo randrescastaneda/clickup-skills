@@ -160,7 +160,7 @@ otherwise report the exact gap and leave it open.
 Reconcile discussion snapshots between <task-URL> and its linked issue/PR.
 Preserve source links, IDs and content revisions, skip generated mirrors,
 and avoid duplicates. Fetch the complete relevant history. If local ClickUp
-reads hit the 25-comment boundary, stop and use a paginated host read path;
+default reads hit the 25-comment boundary, stop and use an explicitly configured complete-history reader or paginated host read path;
 do not assume the first page is complete. Do not change statuses.
 ```
 

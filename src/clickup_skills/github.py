@@ -30,7 +30,8 @@ class GitHub:
 
     def pages(self, endpoint):
         pages = execute(["gh", "api", "--hostname", "github.com", endpoint, "--paginate", "--slurp"], self.context.root)
-        if not isinstance(pages, list) or any(not isinstance(p, list) for p in pages):
+        if not isinstance(pages, list) or any(not isinstance(p, list) or
+                                              any(not isinstance(item, dict) for item in p) for p in pages):
             raise WorkError("GitHub pagination did not return complete lists; refusing reconciliation.")
         return [item for page in pages for item in page]
 
@@ -81,7 +82,14 @@ class GitHub:
         result = []
         for kind, endpoint in endpoints:
             for comment in self.pages(endpoint):
-                if comment.get("body") and comment.get("id"):
+                if kind == "review" and comment.get("state") == "PENDING":
+                    continue
+                body = comment.get("body")
+                if body is not None and not isinstance(body, str):
+                    raise WorkError("GitHub comment body is malformed; refusing reconciliation.")
+                if body:
+                    if not comment.get("id") or not isinstance(comment.get("html_url"), str) or not comment["html_url"].startswith(self.url + "/"):
+                        raise WorkError("GitHub comment identity/source is incomplete; refusing reconciliation.")
                     result.append({"id": f"{kind}:{comment['id']}", "text": comment["body"],
                                    "revision": comment.get("updated_at", comment.get("submitted_at", "")),
                                    "author": (comment.get("user") or {}).get("login", "unknown"),

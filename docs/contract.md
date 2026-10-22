@@ -34,7 +34,7 @@ or comment read as proof that an object/operation does not exist.
 ## Writes and recovery
 
 The helper uses argument arrays without a shell, temporary files for long text,
-and a per-worktree exclusive write lock. Receipts live under
+and a repository-wide OS-held write lock shared by linked worktrees. Receipts live under
 `git rev-parse --git-path clickup-skills`, outside tracked project files. Operation
 keys bind to the project-config digest and exact payload. A changed binding/input
 cannot reuse an old key. Keep keys free of secrets.
@@ -55,8 +55,10 @@ resumable, not a transaction.
 `reconcile --result-file` records an operator's verified remote outcome;
 `--not-applied` enables a later retry only after complete remote inspection.
 Neither flag independently verifies that inspection. Never use either to bypass
-an uncertain result. A stale `write.lock` after a crash requires inspection of
-the recorded PID and running processes before manual removal.
+an uncertain result. OS locks release on process exit; their files remain and
+must not be unlinked while processes are using them. A legacy `write.lock`
+still requires inspecting its recorded PID/process before manual removal. Stop
+old helper versions before upgrading; they do not participate in the new lock.
 
 ## GitHub and completion
 
@@ -77,11 +79,19 @@ Progress comments include ClickUp/repository/artifact URLs and mirror to each
 associated issue/PR. Comment reconciliation uses source identity plus content
 revision and provenance markers, skips generated echoes, preserves source text,
 and does not change status or arbitrary fields. GitHub reads paginate; the reviewed
-local ClickUp readers return one page, so a full 25-comment page stops reconciliation.
-Use paginated host MCP reads for larger histories/threaded replies after resolving
-any pending helper mutation. The helper exports top-level ClickUp comments only.
-See the setup wiki for native activity linking and optional automations; no
-continuous comment worker is installed.
+default local ClickUp readers return one page, so a full 25-comment page stops
+reconciliation. Explicit routing.comment_reader=clickup-api selects the narrow
+GET-only cursor reader with private environment credentials. All writes keep
+using the selected upstream runtime; failed reads never silently fall back.
+Use host MCP reads for threaded replies after resolving pending helper writes. The helper exports top-level ClickUp comments only.
+See the setup wiki for native activity linking and optional automations. The
+optional [worker](sync-worker.md) polls only explicitly listed tasks, defaults to
+a read-only preview, preflights every task before writes, bounds new mirrors per
+pass, and stops on binding changes, incomplete reads, or uncertain outcomes.
+With the default reader it refuses batches that would reach the 25-comment limit;
+the explicit complete-history reader removes that boundary. One worker
+owner per local repository is enforced; separate clones/machines still require
+coordinated task ownership. Setup and CI do not start or deploy it.
 
 The helper's `done` gate requires the task's managed PR block, merged/non-draft
 state, expected base, latest PR-head successful check rollup, and non-empty

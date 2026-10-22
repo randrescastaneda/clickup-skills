@@ -16,6 +16,30 @@ class WorkError(Exception):
     """An actionable failure safe to display to an agent."""
 
 
+@contextlib.contextmanager
+def process_lock(path):
+    """An OS-held lock releases on process exit; never unlink its lock file."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        try:
+            if os.name == "nt":
+                import msvcrt
+                if os.fstat(fd).st_size == 0:
+                    os.write(fd, b" ")
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            raise WorkError("Another workflow holds " + path.name + "; wait for its owner to exit.") from exc
+        yield
+    finally:
+        os.close(fd)
+
+
 def identifier(value):
     value = str(value)
     if not re.fullmatch(r"[A-Za-z0-9_-]+", value):
@@ -82,6 +106,8 @@ def validate(config):
             raise WorkError("routing.prefer must be a list.")
         if config["routing"].get("runtime", "cup") not in ("cup", "rest-mcp"):
             raise WorkError("Local runtime must be cup or rest-mcp; other MCPs run in the host.")
+        if config["routing"].get("comment_reader", "upstream") not in ("upstream", "clickup-api"):
+            raise WorkError("Comment reader must be upstream or clickup-api; it never changes the write runtime.")
         for status in config["github"].get("status_map", {}).values():
             if not isinstance(status, str) or not status.strip():
                 raise WorkError("Status mappings must be non-empty strings.")
@@ -104,21 +130,17 @@ class Context:
         state_dir = Path(git(self.root, "rev-parse", "--git-path", "clickup-skills"))
         self.local = state_dir if state_dir.is_absolute() else self.root / state_dir
         self.local.mkdir(parents=True, exist_ok=True)
+        common = Path(git(self.root, "rev-parse", "--git-common-dir"))
+        self.shared = (common if common.is_absolute() else self.root / common) / "clickup-skills"
         self.fingerprint = hashlib.sha256(json.dumps(self.config, sort_keys=True).encode()).hexdigest()
 
     @contextlib.contextmanager
     def locked(self):
-        lock = self.local / "write.lock"
-        try:
-            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        except FileExistsError as exc:
-            raise WorkError("Another workflow holds write.lock. If it crashed, inspect it before removing the lock.") from exc
-        try:
-            with os.fdopen(fd, "w") as handle:
-                handle.write(str(os.getpid()))
+        # Do not bypass a running/crashed pre-worker version's exclusive lock.
+        if (self.local / "write.lock").exists():
+            raise WorkError("Legacy write.lock exists. Inspect its PID/process before removing it.")
+        with process_lock(self.shared / "write.lock.guard"):
             yield
-        finally:
-            lock.unlink(missing_ok=True)
 
     def state(self):
         path = self.local / "state.json"

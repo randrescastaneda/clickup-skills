@@ -172,8 +172,10 @@ Host agents should use the [shared provenance format](../../skills/clickup-githu
 so helper reconciliation can recognize their existing copies after handoff.
 
 The reviewed local ClickUp backends expose a single comment page. The helper
-stops at 25 comments instead of assuming a complete history. Use a host MCP
-with explicit pagination and fetch threaded replies there when needed. GitHub
+stops at 25 comments instead of assuming a complete history. For complete local
+histories, explicitly select routing.comment_reader=clickup-api with its private
+environment credentials as described in the worker guide; all writes remain
+on the selected upstream runtime. Fetch threaded replies with host tools. GitHub
 discussion reads paginate completely. Replies to pending/unsubmitted GitHub
 reviews are not available until the service exposes them.
 
@@ -181,9 +183,13 @@ Run reconciliation at session start and handoff. Native integration continues
 activity links while agents are offline; configured native automations handle
 their selected events. Neither installing these skills nor authenticating MCPs
 starts an always-on, bidirectional comment synchronizer. Teams needing that
-must deploy a separate authenticated event worker or scheduler, with durable
-receipts, one writer per task, echo suppression, and the same scope/evidence
-rules. No such worker or webhook is installed by this package.
+can prepare the optional [polling worker](../sync-worker.md) on one authenticated
+machine. It uses the same receipts, scope checks and echo suppression, defaults
+to a read-only preview, and bounds new mirrors per pass. The current local
+25-comment limit applies to the default readers. The explicit complete-history
+reader supports longer discussions; live worker acceptance remains unfinished. One writer per task across
+machines is still required. This package does not start a service or install
+a webhook automatically.
 
 ## Verify and troubleshoot
 

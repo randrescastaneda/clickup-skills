@@ -218,6 +218,10 @@ class PackagedInstallTests(unittest.TestCase):
         responses = [json.loads(line) for line in result.stdout.splitlines()]
         tools = next(r["result"]["tools"] for r in responses if r.get("id") == 2)
         self.assertEqual(len(tools), 9)
+        help_result = subprocess.run(argv[:-1] + ["sync-worker", "--help"], env=self.env,
+                                     capture_output=True, text=True, check=True)
+        self.assertIn("--max-writes", help_result.stdout)
+        self.assertIn("--apply", help_result.stdout)
 
 
 if __name__ == "__main__":

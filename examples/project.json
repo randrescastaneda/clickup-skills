@@ -5,7 +5,9 @@
   "clickup": {
     "workspace_id": "1234567",
     "list_id": "901234567890",
-    "root_task_ids": ["86example"]
+    "root_task_ids": [
+      "86example"
+    ]
   },
   "github": {
     "repository": "your-team/your-project",
@@ -22,7 +24,13 @@
     "cup_profile": "work",
     "prefer": [],
     "overrides": {
-      "task.context": ["context-mcp", "cup", "rest-mcp", "official"]
-    }
+      "task.context": [
+        "context-mcp",
+        "cup",
+        "rest-mcp",
+        "official"
+      ]
+    },
+    "comment_reader": "upstream"
   }
 }

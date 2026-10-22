@@ -29,7 +29,10 @@ The helper reads GitHub issue/PR conversations, submitted reviews, and inline
 review comments with pagination. It exports top-level ClickUp comments only.
 Both pinned local ClickUp backends expose one page; a full page of 25 blocks
 helper reconciliation rather than proving absence. Use host tools with complete
-pagination for longer histories and fetch ClickUp threaded replies separately.
+pagination for longer histories or explicitly configure routing.comment_reader
+as clickup-api for the narrow GET-only cursor reader with private environment
+credentials. Writes stay on the selected upstream runtime, without failover.
+Fetch ClickUp threaded replies separately.
 Do not switch a pending mutation to that host path until its original outcome
 is established.
 
@@ -76,3 +79,12 @@ For selected event actions use optional native GitHub Automations. Neither
 mechanism is a documented generic two-way comment/body mirror. Never claim
 authenticating an MCP installed a connection, automation, or background worker.
 Use the linked team wiki for administrator setup and plan requirements.
+
+The optional `cu-work sync-worker` polls explicit tasks with the same source
+provenance and receipts. Preview is read-only; `--apply --watch` starts polling
+on the authenticated local machine. It never creates targets or changes status.
+The worker preflights all tasks, enforces a per-pass write limit, stops on a
+binding change/uncertain result. The 25-comment guard remains for default
+readers; the explicit complete-history reader supports longer discussions.
+No service starts during installation. Repository-wide OS locks coordinate local
+worktrees; separate clones/machines still need one agreed writer per task.

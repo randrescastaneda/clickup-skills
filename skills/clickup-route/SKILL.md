@@ -27,7 +27,10 @@ For MCP, inspect the selected tool's current input schema and returned fields. N
 
 Use a complete-read backend for reconciliation: the pinned `cup comments` and
 REST MCP `list_comments` expose one page, so the helper stops at 25 comments.
-Use paginated host MCP reads for longer histories and threaded replies. Link
+For longer local histories, explicitly select routing.comment_reader=clickup-api
+with private environment credentials for GET-only cursor reads; writes remain
+on the selected upstream runtime and there is no automatic fallback. Use
+paginated host MCP reads for threaded replies. Link
 GitHub before any subtask creation regardless of the selected backend; routing
 a create call directly does not exempt it from `clickup-github`'s association rules.
 

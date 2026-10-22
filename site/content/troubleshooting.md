@@ -22,7 +22,7 @@ Start with the actual agent session and working repository. Authentication in an
 | Comment reconciliation stops at 25 | Use explicit paginated host reads for complete ClickUp history; fetch threaded replies there |
 | PR merged but task is still open | Verify acceptance, current linked PR/base and latest PR-head CI; merge alone is insufficient |
 | No GitHub activity appears in ClickUp | Verify native integration, repo/Space mapping, access and actual `CU-TASK_ID` references |
-| Comments stop copying when the agent closes | Expected: the helper runs when invoked; continuous comments require a separate worker |
+| Comments stop copying when the agent closes | Session tools run when invoked. The optional worker must be started separately on an authenticated machine; inspect its timestamp/status and use the explicit complete-history reader for long histories |
 
 ## A compact diagnosis prompt
 

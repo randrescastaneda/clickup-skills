@@ -23,6 +23,8 @@ from clickup_skills.mcp import TOOLS
 REPO = "https://github.com/randrescastaneda/clickup-skills"
 DEFAULT_URL = "https://randrescastaneda.github.io/clickup-skills/"
 SOURCES = {
+    "docs/sync-worker.md": ("sync-worker", "Optional sync worker", "Work with your agent"),
+    "docs/project-decisions.md": ("project-decisions", "Project decisions", "Maintain"),
     "docs/clients.md": ("clients", "Client setup matrix", "Reference"),
     "docs/contract.md": ("contract", "Execution contract", "Reference"),
     "docs/wiki/github-clickup.md": ("github-integration", "Native integration setup", "Work with your agent"),
@@ -31,9 +33,9 @@ SOURCES = {
 }
 NAV = [
     ("Start here", [("index", "Overview"), ("installation", "Install for your team"), ("project-setup", "Bind your first project")]),
-    ("Work with your agent", [("using-the-plugin", "Talk to your agent"), ("examples", "Usage examples"), ("synchronization", "GitHub, ClickUp & sync"), ("github-integration", "Native integration setup")]),
+    ("Work with your agent", [("using-the-plugin", "Talk to your agent"), ("examples", "Usage examples"), ("synchronization", "GitHub, ClickUp & sync"), ("sync-worker", "Optional sync worker"), ("github-integration", "Native integration setup")]),
     ("Reference", [("reference", "Skills & MCP tools"), ("clients", "Client setup matrix"), ("profiles", "Backends & profiles"), ("binding-reference", "Project binding"), ("cli", "CLI for agents"), ("contract", "Execution contract"), ("validation", "Validation & limits"), ("troubleshooting", "Troubleshooting")]),
-    ("Maintain", [("maintenance", "Documentation pipeline"), ("releases", "Version & releases"), ("credits", "License & attribution")]),
+    ("Maintain", [("maintenance", "Documentation pipeline"), ("project-decisions", "Project decisions"), ("releases", "Version & releases"), ("credits", "License & attribution")]),
 ]
 
 

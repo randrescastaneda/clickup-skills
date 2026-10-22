@@ -297,9 +297,9 @@ class BoundTest(unittest.TestCase):
             self.assertEqual(run.call_args.args[0][-2:], ["--paginate", "--slurp"])
             self.assertEqual(run.call_args.args[0][2:4], ["--hostname", "github.com"])
         target = {"kind": "pull", "number": 42, "url": github.url + "/pull/42"}
-        with patch.object(github, "pages", side_effect=[[{"id": 1, "body": "Conversation"}],
-                                                       [{"id": 1, "body": "Inline"}],
-                                                       [{"id": 1, "body": "Review"}]]) as pages:
+        with patch.object(github, "pages", side_effect=[[{"id": 1, "body": "Conversation", "html_url": target["url"] + "#issuecomment-1"}],
+                                                       [{"id": 1, "body": "Inline", "html_url": target["url"] + "#discussion_r1"}],
+                                                       [{"id": 1, "body": "Review", "html_url": target["url"] + "#pullrequestreview-1"}]]) as pages:
             notes = github.comments(target)
             self.assertEqual({n["id"] for n in notes}, {"comment:1", "review-comment:1", "review:1"})
             self.assertEqual(pages.call_count, 3)
