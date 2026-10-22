@@ -7,31 +7,34 @@ description: Install, configure, verify, or update ClickUp Skills in an agent en
 
 This skill guides **local environment setup**, not changes to remote ClickUp tasks or GitHub issues. Detect the actual agent/client (Codex, Kilo, Claude Code, Copilot, or supported VS Code configuration), whether setup is personal or project-scoped, and which steps are already complete. Explain intended changes before running installation commands. Never request or print an access token in chat.
 
-## Standard skills installation (recommended for Skills CLI users)
+## Recommended: guided onboarding for a new teammate
 
-1. Confirm Node.js **22.20+**, Python **3.11+**, and Git are available. The Vercel `skills` CLI discovers each `skills/<name>/SKILL.md` in this repository. From the working project, or with `-g` for personal skills across projects, run:
-
-   ```bash
-   npx skills add randrescastaneda/clickup-skills -g
-   ```
-
-   Let the teammate choose the applicable agent. For non-interactive setup, add `-a codex`, `-a kilo`, `-a claude-code`, or `-a github-copilot` and `-y` as appropriate. The Skills CLI installs **skill files only**; it does not install the Python runtime, Krodak's CLI, or MCP configuration.
-
-2. Complete local setup for the **same** agent without touching the Skills CLI-managed copies. Example for Kilo:
+1. Check Node.js 22.20+, Python 3.11+, Git, and GitHub CLI. Tell the teammate to run this command in macOS Terminal or Windows PowerShell:
 
    ```bash
-   npx --yes github:randrescastaneda/clickup-skills setup --client kilo --skip-skills
+   npx --yes github:randrescastaneda/clickup-skills onboard
    ```
 
-   Replace `kilo` with `codex`, `claude`, or `copilot`. For VS Code MCP configuration, use `--client vscode --project-dir /absolute/path/to/project`; the chosen agent still owns skill discovery. The installer creates a persistent private Python runtime, installs `@krodak/clickup-cli@latest`, and safely merges MCP settings. It does not depend on the transient npx cache for the installed MCP. `--skip-skills` also works for `update`.
+   It first asks for an agent (Kilo Code default); `--client codex`, `--client claude`, `--client copilot`, or `--client kilo` bypasses the chooser. The command installs the six skills, private Python runtime, Krodak's latest CLI, and safe MCP configuration merge. It then *checks* existing ClickUp and GitHub CLI credentials and only prompts for missing authentication. It never asks the agent to collect tokens.
 
-3. **Alternative for a new teammate who wants a single command:** run `npx --yes github:randrescastaneda/clickup-skills setup --client CLIENT` instead. That installer also manages skill copies. Do **not** mix the two skill managers for the same destination. If the Skills CLI already installed the skills, use `--skip-skills` rather than overwriting or deleting those copies. An existing Claude marketplace plugin may already supply skills and servers; inspect it before installing duplicates.
+2. For ClickUp, the user creates/copies their own personal token at https://app.clickup.com/settings/apps and enters it into the **ClickUp CLI's terminal prompt**. `cup auth` verifies identity. For GitHub, `gh auth login --web` handles browser authorization. Already-valid sign-ins are reused. If GitHub CLI is missing, point to https://cli.github.com/ and rerun the same command; installed state is retained.
 
-## Authentication and checks
+3. Reload the agent and check **all six** skill discoveries, installed `clickup_work` MCP tools and actual GitHub MCP tools, read-only account access, and any bound project/repository scope. The hosted GitHub MCP may require its own OAuth authorization through the client's UI; `gh` login does not grant that authorization. Do not infer remote access from local success. Use `clickup-bind-project` only after the project owner supplies/approves the objective and root task. Do not create tasks or modify remote state during initial verification.
 
-- Install GitHub CLI from https://cli.github.com/ if missing. Each teammate signs in locally, with their own accounts, using `npx --yes github:randrescastaneda/clickup-skills cup init`, `npx --yes github:randrescastaneda/clickup-skills cup auth`, and `gh auth login` as needed. Do not copy or collect tokens. A host GitHub MCP does **not** replace the local helper's requirement for `gh`.
-- Reload the agent. Verify installed skill discovery, the `clickup_work` MCP tools, GitHub access, and an authorized ClickUp task read. Do not infer remote access from a successful local installation. Use `clickup-bind-project` only after the project owner supplies or approves the objective and root task.
-- Report which steps actually passed and what still needs the teammate's sign-in, permissions, or project information. Do not create tasks or change remote status during setup.
+4. Report which checks passed and the smallest missing action. Native GitHub integration and automations require separate team administrator setup.
+
+## Alternative: Vercel Skills CLI or manual setup
+
+For teammates deliberately using the standard Skills CLI, install the skills independently:
+
+```bash
+npx skills add randrescastaneda/clickup-skills -g
+npx --yes github:randrescastaneda/clickup-skills setup --client kilo --skip-skills
+```
+
+The Vercel CLI does not install the Python runtime, Krodak CLI, or MCP settings. To use the guided authentication with Skills CLI-managed copies, run `npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --skip-skills`. Do **not** use both installers to manage the same skill copies.
+
+The legacy `npx --yes github:randrescastaneda/clickup-skills setup --client kilo` remains available for software-only installs and prints separate CLI authentication commands. For VS Code MCP configuration, use `--client vscode --project-dir /absolute/path/to/project`; the actual coding agent still owns skill discovery. An existing Claude marketplace plugin may already supply the skills/servers, so inspect before installing duplicates. The checkout-based Python scripts support additional/legacy clients.
 
 ## Updating without conflicting managers
 
