@@ -111,7 +111,7 @@ def client_setups():
             commands = f"npx --yes github:randrescastaneda/clickup-skills setup --client {name}"
             if name == "vscode":
                 commands += " --project-dir /absolute/path/to/project"
-            text = "One command installs the Python environment, Krodak CLI, five skills, and MCP settings. Reload the agent and complete personal sign-ins."
+            text = "Advanced software-only setup: installs the Python environment, Krodak CLI, six skills, and MCP settings. For a guided two-action flow, use onboard from the installation page."
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
             commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile default"
