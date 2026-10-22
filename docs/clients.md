@@ -4,24 +4,54 @@ One set of workflow skills and executables is shared. Discovery paths and MCP
 configuration belong to each agent, even when several agents run in one editor.
 These adapters are based on publisher documentation checked on 2026-10-19.
 
-## Recommended setup: Skills CLI or full installer
+## Recommended setup: guided onboarding
 
-For standard Vercel Skills CLI skill management, run `npx skills add randrescastaneda/clickup-skills -g`, then configure the runtime/MCP for the actual agent using `npx --yes github:randrescastaneda/clickup-skills setup --client kilo --skip-skills` (replace `kilo` with the client). `--skip-skills` deliberately leaves the CLI-managed skill copies alone. The Skills CLI does not provision Python, Krodak's CLI, GitHub CLI, or MCP settings. Ask the installed `clickup-setup` skill to guide the remaining work. Update skills through `npx skills check` and `npx skills update -g` (or project-scoped `-p`), and runtime through `npx --yes github:randrescastaneda/clickup-skills update --client kilo --skip-skills`. Do not mix managers for the same skill destination.
-
-Alternatively, the following custom command performs a complete install, managing its own skill copies.
-
-Each teammate runs one command for their client, from any directory:
+For new teammates, run one command on macOS or Windows after installing Node.js
+22+, Python 3.11+, Git, and the GitHub CLI:
 
 ```bash
-npx --yes github:randrescastaneda/clickup-skills setup --client kilo
+npx --yes github:randrescastaneda/clickup-skills onboard
 ```
 
-Supported automatic targets are `kilo`, `codex`, `claude`, and `copilot` for
-personal settings, plus `vscode` with `--project-dir /absolute/project`.
-The installer handles the Python environment, Krodak's latest CLI, six skills,
-and a safe configuration merge. Python 3.11+, Node 22+, and Git remain prerequisites.
-GitHub CLI must also be installed and personally authenticated for local workflows.
-Use `update --client CLIENT` with the same scope to refresh the managed install.
+The terminal asks which client to set up (**Kilo Code default**, Codex, Claude
+Code, or Copilot) unless `--client CLIENT` is passed. It installs a private
+Python runtime, Krodak's latest CLI, the six skills, and MCP configuration.
+It validates existing personal ClickUp and GitHub CLI credentials, prompting
+only when needed: ClickUp's personal token is generated in Settings → Apps
+and entered in the CLI, while GitHub `gh auth login --web` uses a browser.
+The installer does not read or log a token. For GitHub CLI not found, install
+it from https://cli.github.com/ and rerun the same onboarding command.
+
+**Separate agent action:** Reload the agent. Check all six skills, the
+`clickup_work` MCP and GitHub tool discovery, hosted MCP OAuth if needed,
+read-only ClickUp/GitHub access, and project/repository permissions. `gh`
+authentication does not authenticate a separate hosted GitHub MCP. Neither
+step configures ClickUp's native GitHub integration or changes remote tasks.
+
+### Alternative: standard Vercel Skills CLI
+
+To manage the skill copies with Vercel and the runtime separately, run:
+
+```bash
+npx skills add randrescastaneda/clickup-skills -g
+npx --yes github:randrescastaneda/clickup-skills setup --client kilo --skip-skills
+```
+
+Then run `npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --skip-skills`
+for guided authentication if needed. `--skip-skills` protects Vercel-owned copies.
+Vercel's updater does not provision the Python runtime or Krodak CLI; use
+`npx skills update -g` for skills and `update --client kilo --skip-skills`
+through this package for the runtime.
+
+The old software-only command `npx --yes github:randrescastaneda/clickup-skills setup --client kilo`
+is still supported. It prints manual authentication commands. Do not mix
+two skill managers on the same destination.
+
+Supported automatic clients are `kilo`, `codex`, `claude`, and `copilot`.
+For VS Code MCP use `--client vscode --project-dir /absolute/project`.
+For all project-scoped installations, use the same `--project-dir` again
+for updates. Existing GitHub servers are reused; changed personal settings
+are backed up and conflicts stop the setup.
 
 | Client | Personal configuration managed by setup |
 | --- | --- |
