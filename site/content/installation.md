@@ -106,7 +106,7 @@ An agent can reuse existing host ClickUp and GitHub MCPs with the same skills an
 
 </details>
 
-## Keep the installation current
+## Keep installations current
 
 For installations entirely managed by this plugin, ask your setup agent to refresh the installed client:
 
