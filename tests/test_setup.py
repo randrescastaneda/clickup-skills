@@ -195,6 +195,7 @@ class PackagedInstallTests(unittest.TestCase):
         names = {item["path"] for item in packed["files"]}
         self.assertIn("bin/clickup-skills.mjs", names)
         self.assertIn("scripts/setup.py", names)
+        self.assertIn("scripts/onboard.py", names)
         self.assertIn("scripts/run_work.py", names)
         self.assertIn("profiles/default.json", names)
         self.assertIn("third_party/krodak/LICENSE", names)
