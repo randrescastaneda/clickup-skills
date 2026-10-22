@@ -69,9 +69,8 @@ class GitHubAuthTests(unittest.TestCase):
 
     def test_browser_login_only_when_missing(self):
         with patch.object(onboard.subprocess, "run",
-                          side_effect=[completed(1), completed(0), completed(0)]) as run, \
-             patch.object(onboard.sys.stdin, "isatty", return_value=True):
-            onboard.authenticate_github("/opt/bin/gh")
+                          side_effect=[completed(1), completed(0), completed(0)]) as run:
+            onboard.authenticate_github("/opt/bin/gh", interactive=True)
         self.assertEqual(run.call_count, 3)
         self.assertEqual(run.call_args_list[1].args[0],
                          ["/opt/bin/gh", "auth", "login", "--hostname", "github.com", "--web"])
@@ -84,10 +83,9 @@ class GitHubAuthTests(unittest.TestCase):
                 onboard.authenticate_github()
 
     def test_no_browser_login_without_tty(self):
-        with patch.object(onboard.subprocess, "run", return_value=completed(1)) as run, \
-             patch.object(onboard.sys.stdin, "isatty", return_value=False):
+        with patch.object(onboard.subprocess, "run", return_value=completed(1)) as run:
             with self.assertRaisesRegex(ValueError, "interactive"):
-                onboard.authenticate_github("/opt/bin/gh")
+                onboard.authenticate_github("/opt/bin/gh", interactive=False)
         self.assertEqual(run.call_count, 1)
 
 
