@@ -284,13 +284,14 @@ def setup(args, home):
     save_json(home / "installation.json", {"runtime": str(runtime)})
     print("\nSetup complete: Python environment, Krodak CLI, " + ("external skills unchanged" if args.skip_skills else "managed skills") + ", and MCP configuration.")
     print("Client settings: " + str(destination))
-    print("Reload your agent. Each teammate signs in with their own accounts:")
-    print("  " + NPX + " cup init")
-    print("  " + NPX + " cup auth")
-    print("  gh auth login")
-    if not shutil.which("gh"):
-        print("GitHub CLI is missing. Install it from https://cli.github.com/ before using the local GitHub workflow.")
-    print("Ask your agent to verify account access and bind the working project before task writes.")
+    if args.command != "onboard":
+        print("Reload your agent. Each teammate signs in with their own accounts:")
+        print("  " + NPX + " cup init")
+        print("  " + NPX + " cup auth")
+        print("  gh auth login")
+        if not shutil.which("gh"):
+            print("GitHub CLI is missing. Install it from https://cli.github.com/ before using the local GitHub workflow.")
+        print("Ask your agent to verify account access and bind the working project before task writes.")
 
 
 def main():
@@ -304,12 +305,23 @@ def main():
         command = [str(runtime_python(runtime)), "-I", str(runtime / "scripts/run_work.py")]
         raise SystemExit(subprocess.call(command + (["--cup"] if args[0] == "cup" else []) + args[1:]))
     parser = argparse.ArgumentParser(description=__doc__, epilog="Also: cup <arguments> or work <cu-work arguments> after setup.")
-    parser.add_argument("command", choices=["setup", "update"])
-    parser.add_argument("--client", choices=CLIENTS, required=True)
+    parser.add_argument("command", choices=["setup", "update", "onboard"])
+    parser.add_argument("--client", choices=CLIENTS)
     parser.add_argument("--skip-skills", action="store_true", help="Leave externally installed skills untouched (e.g. npx skills add)")
     parser.add_argument("--profile", choices=["default", "official", "context"], default="default")
     parser.add_argument("--project-dir", type=Path, help="Install project skills and config instead of personal settings")
-    setup(parser.parse_args(args), home)
+    options = parser.parse_args(args)
+    if options.client is None:
+        if options.command == "onboard":
+            from onboard import choose_client
+            options.client = choose_client()
+        else:
+            parser.error("--client is required for setup and update.")
+    setup(options, home)
+    if options.command == "onboard":
+        from onboard import run_onboarding
+        active = read_json(home / "installation.json", {})
+        run_onboarding(Path(active["runtime"]))
 
 
 if __name__ == "__main__":
