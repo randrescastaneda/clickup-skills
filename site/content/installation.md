@@ -45,7 +45,7 @@ PRs. Report which checks passed and the smallest missing action, if any.
 
 **Why the separate agent step?** The terminal can confirm installed files, configuration, and local CLI authentication. Only your running agent can confirm that it has discovered the six skills and the correct hosted/installed MCP tools, and that those tools can reach the intended resources.
 
-## Who does what on a team
+## Who does what
 
 One person can perform several roles. Installing on one machine does **not** authenticate or install for other teammates.
 
@@ -78,7 +78,7 @@ npx skills add randrescastaneda/clickup-skills -g
 npx --yes github:randrescastaneda/clickup-skills setup --client kilo --skip-skills
 ```
 
-This is an **alternative**, not an additional required installation step. Vercel installs skills only; `--skip-skills` lets our setup install the runtime and MCP configuration without overwriting those copies. Run the account steps afterward using `onboard --client kilo --skip-skills` if you want the guided authentication. Do not let two managers install skills to the same destination.
+This is an **alternative**, not an additional required installation step. Vercel installs skills only; `--skip-skills` lets our setup install the runtime and MCP configuration without overwriting those copies. Run the account steps afterward using `npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --skip-skills` if you want the guided authentication. Do not let two managers install skills to the same destination.
 
 </details>
 
