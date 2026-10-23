@@ -7,6 +7,19 @@ section: Work with your agent
 
 You do not need to remember `cu-work` commands, MCP tool names, or synchronization markers. Describe the outcome, identify the task when needed, and tell the agent what evidence you expect. The agent selects tools and follows the workflow skills.
 
+## Which installation mode?
+
+- **Default browser OAuth:** Your agent uses the official ClickUp MCP and
+  GitHub MCP/`gh` directly. It loads the
+  [guarded issue-first workflow](clickup-github.html) before any mutation.
+  The agent re-reads scope, searches complete history for duplicates, verifies
+  a GitHub target before creating a subtask, and stops on uncertain writes.
+  These checks are agent-enforced; there is no local `clickup_work` journal.
+- **Optional full local helper:** If you deliberately installed
+  `onboard --mode cli`, authenticated Krodak's `cup`, and bound this project,
+  your agent may use `clickup_work` for helper-enforced scope and durable
+  receipts. The two authentication methods are separate.
+
 ## A good first request
 
 ```prompt
