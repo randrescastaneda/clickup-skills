@@ -96,6 +96,110 @@ class ConfigMergeTests(unittest.TestCase):
             setup.merge_config('{"mcp":{},"mcp":{}}', "kilo", self.desired(), {})
 
 
+class HostedOAuthSetupTests(unittest.TestCase):
+    def setUp(self):
+        from types import SimpleNamespace
+        self.temporary = tempfile.TemporaryDirectory(prefix="clickup oauth setup ")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.settings = self.root / "kilo.jsonc"
+        self.skills = self.root / ".kilo/skills"
+        self.home = self.root / "managed"
+        self.args = SimpleNamespace(client="kilo", profile="default",
+                                    project_dir=None, skip_skills=False)
+
+    def run_host(self):
+        with patch.object(setup, "config_destination", return_value=self.settings), \
+             patch.object(setup, "skill_directory", return_value=self.skills):
+            setup.setup_host(self.args, self.home)
+
+    def test_oauth_install_has_no_cli_runtime_or_personal_credentials(self):
+        self.settings.write_text('{ // preserve\n"model":"my-model",\n"mcp": {},\n}', encoding="utf-8")
+        self.run_host()
+        config_text = self.settings.read_text(encoding="utf-8")
+        config = json.loads(setup.jsonc_text(config_text))
+        self.assertIn("// preserve", config_text)
+        self.assertEqual(config["model"], "my-model")
+        self.assertEqual(set(config["mcp"]), {"clickup_official", "github"})
+        self.assertEqual(config["mcp"]["clickup_official"]["url"],
+                         "https://mcp.clickup.com/mcp")
+        self.assertFalse((self.home / "releases").exists())
+        self.assertFalse((self.home / "installation.json").exists())
+        self.assertEqual(len(list(self.skills.glob("*/SKILL.md"))), 6)
+        self.assertNotIn("clickup_work", config["mcp"])
+        self.assertEqual(len(list(self.settings.parent.glob("*.clickup-skills-backup-*"))), 1)
+        self.run_host()
+        self.assertEqual(self.settings.read_text(encoding="utf-8"), config_text)
+
+    def test_existing_remote_and_local_helper_are_preserved(self):
+        existing = {
+            "mcp": {
+                "clickup_official": {"type": "remote", "url": "https://mcp.clickup.com/mcp", "enabled": True},
+                "clickup_work": {"type": "local", "command": ["/private/python", "script.py", "mcp"]},
+                "github": {"type": "remote", "url": "https://hosted.example/github", "enabled": True},
+            },
+            "permissions": {"clickup_official_*": "ask"}
+        }
+        self.settings.write_text(json.dumps(existing), encoding="utf-8")
+        self.run_host()
+        after = json.loads(self.settings.read_text(encoding="utf-8"))
+        self.assertEqual(after, existing)
+        self.assertFalse((self.home / "releases").exists())
+
+    def test_host_only_keeps_vercel_managed_skills_unchanged(self):
+        first = self.skills / "clickup-route/SKILL.md"
+        first.parent.mkdir(parents=True)
+        first.write_text("Vercel-owned", encoding="utf-8")
+        self.args.skip_skills = True
+        self.run_host()
+        self.assertEqual(first.read_text(encoding="utf-8"), "Vercel-owned")
+        self.assertEqual(len(list(self.skills.glob("*/SKILL.md"))), 1)
+        self.assertTrue(self.settings.exists())
+
+    def test_conflict_does_not_change_user_settings(self):
+        self.settings.write_text('{"mcp":{"clickup_official": {"type":"local","command":["custom"]}}}', encoding="utf-8")
+        # Unmanaged optional servers stay unchanged; a mismatched name is not overwritten.
+        self.run_host()
+        parsed = json.loads(self.settings.read_text(encoding="utf-8"))
+        self.assertEqual(parsed["mcp"]["clickup_official"]["command"], ["custom"])
+
+    def test_unsupported_host_profile_fails_without_changes(self):
+        self.args.profile = "context"
+        with self.assertRaisesRegex(ValueError, "only the official"):
+            self.run_host()
+        self.assertFalse(self.settings.exists())
+        self.assertFalse(self.home.exists())
+
+    def test_oauth_client_config_is_valid_for_all_installer_targets(self):
+        for client, key in (("kilo", "mcp"), ("codex", "mcp_servers"),
+                            ("claude", "mcpServers"), ("copilot", "mcpServers"),
+                            ("vscode", "servers")):
+            config = setup.desired_host_config(client)
+            self.assertEqual(set(config[key]), {"clickup_official", "github"})
+            self.assertNotIn("clickup_work", config[key])
+
+    def test_mode_defaults_oauth_and_cli_is_explicit(self):
+        import onboard
+        with patch.object(sys, "argv", ["setup.py", "onboard", "--client", "kilo"]), \
+             patch.object(setup, "setup_host") as host, \
+             patch.object(setup, "setup") as local, \
+             patch.object(onboard, "run_onboarding") as auth:
+            setup.main()
+        host.assert_called_once()
+        local.assert_not_called()
+        auth.assert_called_once_with(None, mode="oauth")
+
+        with patch.object(sys, "argv", ["setup.py", "onboard", "--client", "kilo", "--mode", "cli"]), \
+             patch.object(setup, "setup_host") as host, \
+             patch.object(setup, "setup") as local, \
+             patch.object(setup, "read_json", return_value={"runtime": "/test/runtime"}), \
+             patch.object(onboard, "run_onboarding") as auth:
+            setup.main()
+        host.assert_not_called()
+        local.assert_called_once()
+        auth.assert_called_once_with(Path("/test/runtime"), mode="cli")
+
+
 class PackagedInstallTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="clickup setup ")
