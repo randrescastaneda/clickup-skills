@@ -14,7 +14,9 @@ npx --yes github:randrescastaneda/clickup-skills onboard
 
 Select the coding agent (**Kilo Code default**) or provide `--client kilo|codex|claude|copilot`.
 This installs the **six** agent skills and the hosted official ClickUp MCP
-(`https://mcp.clickup.com/mcp`) plus GitHub MCP config. It validates `gh`
+(`https://mcp.clickup.com/mcp`). **Kilo Code uses `gh` for GitHub**; the
+remote GitHub MCP OAuth flow cannot dynamically register Kilo's client.
+Other agents may configure GitHub MCP separately if compatible. It validates `gh`
 authentication and opens GitHub's browser flow if needed. It does **not**
 install Krodak, a private Python workflow runtime, or ask for ClickUp's
 personal token. A preexisting configured local `clickup_work` server is
@@ -79,7 +81,7 @@ Project setup uses the destinations below (Codex: `.codex/config.toml`);
 project Codex config may require trusting the project in Codex. Existing project
 `kilo.jsonc` takes precedence over creating `.kilo/kilo.jsonc`.
 
-Settings updates retain a private sibling backup. Managed server receipts prevent
+Settings updates retain a private sibling backup. On Kilo's OAuth route, a previously installer-owned, unchanged GitHub MCP entry using the incompatible remote endpoint is disabled and can be restored manually. User-owned or locally edited entries are preserved, with a warning when they may still fail OAuth. Alternative-name ClickUp endpoints are reused only after verifying the same safe official OAuth configuration; duplicate/unsafe endpoints stop setup. Managed server receipts prevent
 overwriting locally changed commands. Existing GitHub servers are reused, including
 an equivalent remote URL under another name. JSONC comments and unrelated TOML are
 retained. Ambiguous settings stop setup. Existing default `cu-work mcp` entries
