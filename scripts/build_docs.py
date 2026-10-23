@@ -108,10 +108,10 @@ def client_setups():
     for name, text in destinations.items():
         automatic = name in ("claude", "codex", "copilot", "kilo", "vscode")
         if automatic:
-            commands = f"npx --yes github:randrescastaneda/clickup-skills setup --client {name}"
+            commands = f"npx --yes github:randrescastaneda/clickup-skills onboard --client {name}"
             if name == "vscode":
                 commands += " --project-dir /absolute/path/to/project"
-            text = "Advanced software-only setup: installs the Python environment, Krodak CLI, six skills, and MCP settings. For a guided two-action flow, use onboard from the installation page."
+            text = "OAuth-first setup: installs six skills and hosted ClickUp/GitHub MCP configuration; ClickUp browser authorization and tool verification happen inside the agent. Use --mode cli only for the token-backed local helper."
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
             commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile default"
