@@ -17,7 +17,7 @@ npx --yes github:randrescastaneda/clickup-skills onboard
 
 The installer asks which agent to configure: press **Enter for Kilo Code (default)**, or select Codex, Claude Code, or GitHub Copilot. You can also supply the client directly, e.g. `--client codex`.
 
-**What it does:** Installs six agent skills, adds ClickUp's official remote MCP endpoint (`https://mcp.clickup.com/mcp`) and GitHub MCP to your agent configuration, and checks GitHub CLI authorization. If you have already signed in with `gh`, that sign-in is reused; otherwise its browser login starts. Settings and existing server entries are preserved. Conflicting or locally edited skill copies are not overwritten.
+**What it does:** Installs six agent skills, adds ClickUp's official remote MCP endpoint (`https://mcp.clickup.com/mcp`) to your agent configuration and checks GitHub CLI authorization. **For Kilo, GitHub uses `gh` rather than the remote GitHub MCP**, because that server's OAuth registration is incompatible with Kilo. Other clients may configure GitHub MCP separately. If you have already signed in with `gh`, that sign-in is reused; otherwise its browser login starts. Settings and existing server entries are preserved. Conflicting or locally edited skill copies are not overwritten.
 
 **What it does NOT do:** It does not install Krodak's CLI, access a private ClickUp token, authenticate ClickUp in the terminal, or enable the local helper's durable journal. **ClickUp OAuth happens inside your coding agent in Step 2**, not through `npx`.
 
@@ -29,14 +29,15 @@ Restart or reload the **selected coding agent** and send this instruction in its
 
 ```prompt
 Use the clickup-setup skill to verify my OAuth-based ClickUp Skills installation.
-Discover the six skills and the actual official ClickUp and GitHub MCP tools.
+Discover the six skills and the official ClickUp MCP tools. Verify GitHub
+access via gh; if a compatible GitHub MCP is installed, test it separately.
 Guide me through the official ClickUp MCP's browser OAuth flow only if needed.
 Verify read-only access to my intended Workspace, List and task, plus my GitHub
 repository. Do not create or modify any tasks, issues or PRs.
 Report the authenticated servers, exact scope, and missing setup (if any).
 ```
 
-**Why is the second step needed?** The terminal can install the configuration; only your running coding agent can complete its hosted OAuth and actually discover the available tools and permissions. GitHub CLI sign-in and a hosted GitHub MCP's OAuth are independent.
+**Why is the second step needed?** The terminal can install the configuration; only your running coding agent can complete its hosted OAuth and actually discover the available tools and permissions. GitHub CLI sign-in and a hosted GitHub MCP's OAuth are independent. GitHub's remote MCP does not support dynamic client registration, so the Kilo setup deliberately does not add it. An unchanged server installed by this installer earlier is disabled safely; user-owned entries are not overwritten.
 
 <details markdown="1"><summary>Already using the official ClickUp MCP?</summary>
 
@@ -49,7 +50,7 @@ Your existing browser OAuth session may continue to work. The installer reuses a
 | Default OAuth mode | Full local helper mode |
 | --- | --- |
 | **No ClickUp API token.** Official ClickUp MCP authorizes in the agent's browser flow | Requires the ClickUp CLI's personal API token, unless it is already configured |
-| Six skills + hosted ClickUp/GitHub MCP configuration | Six skills + private Python workflow + Krodak CLI + local `clickup_work` MCP |
+| Six skills + hosted ClickUp MCP; GitHub uses `gh` in Kilo, optional compatible MCP elsewhere | Six skills + private Python workflow + Krodak CLI + local `clickup_work` MCP |
 | Agents execute operations directly, following a [guarded host issue-first protocol](clickup-github.html) | Local helper enforces project scope and records durable operation receipts when a valid binding is configured |
 | Markers and read-backs reduce duplicates; no local helper journal or cross-machine exactly-once guarantee | Helper journals and OS locks cover local writes, not other machines or direct host calls |
 
