@@ -111,7 +111,7 @@ def client_setups():
             commands = f"npx --yes github:randrescastaneda/clickup-skills onboard --client {name}"
             if name == "vscode":
                 commands += " --project-dir /absolute/path/to/project"
-            text = "OAuth-first setup: installs six skills and hosted ClickUp/GitHub MCP configuration; ClickUp browser authorization and tool verification happen inside the agent. Use --mode cli only for the token-backed local helper."
+            text = "OAuth-first setup: installs six skills and hosted ClickUp MCP configuration; GitHub uses gh for Kilo and optional compatible MCP in other agents. ClickUp browser authorization and tool verification happen inside the agent. Use --mode cli only for the token-backed local helper."
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
             commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile default"
