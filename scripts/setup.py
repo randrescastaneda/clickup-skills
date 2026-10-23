@@ -25,6 +25,8 @@ CLIENTS = ("kilo", "codex", "claude", "copilot", "vscode")
 SOURCE_ITEMS = ("src", "scripts/run_work.py", "skills", "profiles", "LICENSE", "THIRD_PARTY_NOTICES.md", "third_party")
 START, END = "# BEGIN clickup-skills managed MCP", "# END clickup-skills managed MCP"
 NPX = "npx --yes github:randrescastaneda/clickup-skills"
+OFFICIAL_CLICKUP_URL = "https://mcp.clickup.com/mcp"
+GITHUB_REMOTE_URL = "https://api.githubcopilot.com/mcp/"
 
 
 def read_json(path, default=None):
@@ -141,8 +143,37 @@ def desired_host_config(client):
     """Agent-hosted OAuth MCP only. Do not install or authenticate cup in this mode."""
     config = read_json(ROOT / "profiles/official.json")
     config["mcpServers"].pop("clickup_work")
+    if client == "kilo":
+        # The remote GitHub MCP cannot dynamically register a Kilo OAuth client.
+        # Kilo has verified GitHub CLI access; do not install a failing remote.
+        config["mcpServers"].pop("github")
     text = render_config(client, config)
     return tomllib.loads(text) if client == "codex" else json.loads(text)
+
+
+def valid_official_oauth_server(server, expected):
+    """Allow only a matching OAuth endpoint and benign client display options."""
+    if not isinstance(server, dict) or server.get("url") != OFFICIAL_CLICKUP_URL:
+        return False
+    if "type" in expected and server.get("type") != expected["type"]:
+        return False
+    if server.get("enabled", True) is not True:
+        return False
+    if server.get("oauth", True) is not True:
+        return False
+    if "auth" in server and server["auth"] != "oauth":
+        return False
+    if "timeout" in server and (type(server["timeout"]) is not int or server["timeout"] <= 0):
+        return False
+    # Unknown keys could hide a custom proxy, a static credential, or a different
+    # authentication mechanism. Never silently reuse such an endpoint.
+    allowed = {"type", "url", "enabled", "oauth", "auth", "timeout", "tools"}
+    if any(field not in allowed for field in server):
+        return False
+    if "tools" in server and (not isinstance(server["tools"], list)
+                              or not all(isinstance(v, str) for v in server["tools"])):
+        return False
+    return True
 
 
 def merge_config(text, client, desired, previous):
@@ -151,6 +182,18 @@ def merge_config(text, client, desired, previous):
     if not isinstance(data, dict) or not isinstance(data.get(key, {}), dict):
         raise ValueError("MCP settings must be an object; existing settings were preserved.")
     current = data.get(key, {})
+    official = desired[key].get("clickup_official")
+    if official is not None:
+        matches = [(name, item) for name, item in current.items()
+                   if isinstance(item, dict) and item.get("url") == OFFICIAL_CLICKUP_URL]
+        if len(matches) > 1:
+            raise ValueError("Multiple official ClickUp MCP endpoints are configured. Remove duplicates manually; settings were preserved.")
+        for alias, item in matches:
+            if not valid_official_oauth_server(item, official):
+                raise ValueError("Existing official ClickUp MCP alias " + alias +
+                                 " is not a safe browser-OAuth configuration. Resolve it manually; settings were preserved.")
+        if "clickup_official" in current and not valid_official_oauth_server(current["clickup_official"], official):
+            raise ValueError("Existing clickup_official is not the expected browser-OAuth MCP. Resolve it manually; settings were preserved.")
     owned, changes = dict(previous), {}
     for name, server in desired[key].items():
         if name in current:
@@ -166,27 +209,40 @@ def merge_config(text, client, desired, previous):
                     raise ValueError("Refusing to replace an existing or locally modified MCP server: " + name)
                 changes[name] = server
             elif name == "clickup_official" and name not in previous:
-                # Reuse a legitimate OAuth endpoint with extra client options (e.g. enabled=true).
-                # Never silently accept a same-name lookalike server, disabled OAuth or static credentials.
-                existing = current[name]
-                if (not isinstance(existing, dict)
-                    or existing.get("url") != server.get("url")
-                    or existing.get("type", server.get("type")) != server.get("type")
-                    or existing.get("enabled", True) is False
-                    or existing.get("oauth", True) is False
-                    or existing.get("headers") or existing.get("env") or existing.get("environment")):
-                    raise ValueError("Existing clickup_official is not the expected browser-OAuth MCP. Resolve it manually; configuration was preserved.")
+                # Validated above, including any optional display/client settings.
                 continue
             elif name != "clickup_work" and name not in previous:
                 continue  # Reuse an existing user-managed GitHub/optional server.
             else:
                 raise ValueError("Refusing to replace an existing or locally modified MCP server: " + name)
         else:
-            if name != "clickup_work" and any(s.get("url") == server.get("url") for s in current.values()
-                                                 if isinstance(s, dict) and server.get("url")):
+            if name == "clickup_official" and official is not None:
+                # An alternate name can be reused only after validation above.
+                if any(alias != name for alias, _ in matches):
+                    continue
+            elif name != "clickup_work" and any(s.get("url") == server.get("url") for s in current.values()
+                                                   if isinstance(s, dict) and server.get("url")):
                 continue
             changes[name] = server
         owned[name] = server
+    if client == "kilo" and official is not None and "github" not in desired[key]:
+        # Migrate only an unchanged, installer-owned remote GitHub MCP. The
+        # remote auth server lacks DCR support for Kilo; leave unowned/edited
+        # user configurations untouched. Disabling is reversible and avoids
+        # mutating unrelated JSONC/TOML or erasing an existing user's settings.
+        old_github = previous.get("github")
+        active_github = current.get("github")
+        if (isinstance(old_github, dict)
+                and old_github.get("url") == GITHUB_REMOTE_URL
+                and isinstance(active_github, dict)
+                and active_github == old_github):
+            disabled = {**active_github, "enabled": False}
+            if disabled != active_github:
+                changes["github"] = disabled
+            owned["github"] = disabled
+        elif old_github is not None:
+            # The user edited/deleted this server; relinquish ownership.
+            owned.pop("github", None)
     if not changes:
         return text, owned
     if client == "codex":
