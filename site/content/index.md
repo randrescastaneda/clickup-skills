@@ -20,7 +20,7 @@ section: Start here
 
 ## You describe the work. Your agent coordinates it.
 
-ClickUp Skills is a workflow plugin for coding agents. It supplies {{skill_count}} shared skills, a scoped workflow helper, and {{tool_count}} MCP tools that keep a project objective, ClickUp tasks, and GitHub artifacts connected. **After setup, use natural language. Your agent operates the tools.**
+ClickUp Skills is a workflow plugin for coding agents. Its default setup installs {{skill_count}} shared skills and connects ClickUp's official MCP through browser OAuth. An **optional** local scoped helper exposes {{tool_count}} MCP tools for teams that want durable operation receipts and a separate token-backed CLI. **After setup, use natural language. Your agent operates the tools.**
 
 <div class="feature-grid"><a class="feature" href="project-setup.html"><span class="feature-number">01 / DEFINE</span><h3>Start with a real objective</h3><p>Bind the repository to the right workspace, list, and task tree. Keep the work inside that scope.</p><span class="text-link">Bind a project →</span></a><a class="feature" href="using-the-plugin.html"><span class="feature-number">02 / DELEGATE</span><h3>Keep the work connected</h3><p>Your agent creates useful subtasks, associates GitHub targets, and records meaningful progress.</p><span class="text-link">See the daily workflow →</span></a><a class="feature" href="synchronization.html"><span class="feature-number">03 / VERIFY</span><h3>Make “done” mean done</h3><p>Link evidence, preserve discussions, and verify the merged PR, latest-head checks, and acceptance.</p><span class="text-link">Understand the rules →</span></a></div>
 

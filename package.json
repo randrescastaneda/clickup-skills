@@ -7,6 +7,6 @@
   "homepage": "https://randrescastaneda.github.io/clickup-skills/",
   "bin": {"clickup-skills": "bin/clickup-skills.mjs"},
   "engines": {"node": ">=22"},
-  "files": ["bin/", "scripts/setup.py", "scripts/install_skills.py", "scripts/run_work.py", "src/**/*.py", "profiles/", "skills/", "third_party/", "pyproject.toml", "THIRD_PARTY_NOTICES.md"],
+  "files": ["bin/", "scripts/setup.py", "scripts/onboard.py", "scripts/install_skills.py", "scripts/run_work.py", "src/**/*.py", "profiles/", "skills/", "third_party/", "pyproject.toml", "THIRD_PARTY_NOTICES.md"],
   "publishConfig": {"access": "public"}
 }

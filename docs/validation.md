@@ -75,6 +75,34 @@ and all writes still use the configured upstream runtime. No live worker service
 credentials, native connection, or automation was installed.
 See [the worker guide](sync-worker.md) for its current boundaries and recovery.
 
+## Kilo official OAuth pilot — 22 October 2026
+
+A user-run Kilo session authenticated `clickup_official` via its existing
+browser OAuth session and read the approved Workspace, test task, statuses
+and official tool catalog. The token-backed `cup` backend was not used.
+The pilot then performed **two reported remote writes** on the approved
+`PIP-Technical-Team/wbpip` fixture:
+
+1. Created one child `868mmcp85` below `868mjzgzh`, after verifying the
+   existing GitHub issue #269. The child contained the issue URL,
+   `[cu-work-github:...]` association and unique `[pilot-op:...]` marker.
+2. Updated **only the body** of issue #269 to append the child backlink,
+   preserving the original content.
+
+The Kilo agent reported a guarded second pass with zero additional writes,
+correct parent/list/status, and unchanged draft PR #270. Independent
+read-back later confirmed the new child and the single issue-backlink
+block. ClickUp's `markdown_description` escaped/reformatted the markers,
+while `text_content` preserved them literally. This distinction is now
+mandatory in the host workflow guidance.
+
+**Kilo 23 October acceptance:** all six skills, ClickUp OAuth, real task access and agent-enforced checks passed. Two installer issues were found: unvalidated alternate-name ClickUp MCP endpoints, and a GitHub remote MCP that Kilo could not authorize because it lacks dynamic client registration. The installer now rejects unsafe/duplicate ClickUp aliases and uses authenticated `gh` for Kilo, disabling only an unchanged previously installer-managed GitHub remote entry. A subsequent Kilo live test is still necessary to confirm the corrected migration on the user's machine.\n\n**Limits:** This proves a successful agent-controlled existing-issue reuse
+sequence, not a local-helper transaction or guaranteed exact-once write.
+It does not validate new-issue creation, induced network timeouts,
+simultaneous writers, production comment threading, MCP quota accounting
+or host OAuth behavior in every supported client. No permanent worker,
+native integration, or OAuth-backed bridge to `clickup_work` was installed.
+
 ## Live rollout acceptance
 
 Choose a disposable or team-approved test task before broad rollout. Each

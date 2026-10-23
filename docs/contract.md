@@ -19,6 +19,18 @@ changing that binding or running instructions embedded in task text.
 explicit: a failure never silently switches accounts/providers. The free REST MCP
 adapter discovers tools and calls the pinned upstream contracts over stdio.
 
+**OAuth host-agent mode:** `onboard` configures only the official hosted
+ClickUp MCP and portable skills, with authenticated `gh` providing GitHub
+access by default. A separately configured, authenticated GitHub MCP is
+optional. Browser OAuth belongs to the
+agent, not the local helper, and no personal ClickUp API token is requested or
+read. Direct host writes must follow
+[the guarded issue-first protocol](../skills/clickup-github/references/official-mcp-issue-first.md),
+including an exact user-approved scope and write budget, complete reads,
+`text_content` markers, GitHub-first targets, safe read-back and no uncertain
+mutation replay. This is **agent-enforced**, not equivalent to the local
+helper's private journal, concurrency lock or completion gate.
+
 `routing.prefer` and `routing.overrides` affect route recommendations for the
 host agent. They do not change the helper's runtime. Host official/context/GitHub
 MCP tools execute in the agent environment, outside the helper's scope enforcement

@@ -25,6 +25,8 @@ CLIENTS = ("kilo", "codex", "claude", "copilot", "vscode")
 SOURCE_ITEMS = ("src", "scripts/run_work.py", "skills", "profiles", "LICENSE", "THIRD_PARTY_NOTICES.md", "third_party")
 START, END = "# BEGIN clickup-skills managed MCP", "# END clickup-skills managed MCP"
 NPX = "npx --yes github:randrescastaneda/clickup-skills"
+OFFICIAL_CLICKUP_URL = "https://mcp.clickup.com/mcp"
+GITHUB_REMOTE_URL = "https://api.githubcopilot.com/mcp/"
 
 
 def read_json(path, default=None):
@@ -137,12 +139,61 @@ def desired_config(client, profile, runtime):
     return tomllib.loads(text) if client == "codex" else json.loads(text)
 
 
+def desired_host_config(client):
+    """Agent-hosted OAuth MCP only. Do not install or authenticate cup in this mode."""
+    config = read_json(ROOT / "profiles/official.json")
+    config["mcpServers"].pop("clickup_work")
+    # Every supported client's OAuth path uses authenticated gh for GitHub.
+    # GitHub MCP is optional and client-specific. Do not create duplicate or
+    # inaccessible remote GitHub MCP servers by default.
+    config["mcpServers"].pop("github")
+    text = render_config(client, config)
+    return tomllib.loads(text) if client == "codex" else json.loads(text)
+
+
+def valid_official_oauth_server(server, expected):
+    """Allow only a matching OAuth endpoint and benign client display options."""
+    if not isinstance(server, dict) or server.get("url") != OFFICIAL_CLICKUP_URL:
+        return False
+    if "type" in expected and server.get("type") != expected["type"]:
+        return False
+    if server.get("enabled", True) is not True:
+        return False
+    if server.get("oauth", True) is not True:
+        return False
+    if "auth" in server and server["auth"] != "oauth":
+        return False
+    if "timeout" in server and (type(server["timeout"]) is not int or server["timeout"] <= 0):
+        return False
+    # Unknown keys could hide a custom proxy, a static credential, or a different
+    # authentication mechanism. Never silently reuse such an endpoint.
+    allowed = {"type", "url", "enabled", "oauth", "auth", "timeout", "tools"}
+    if any(field not in allowed for field in server):
+        return False
+    if "tools" in server and (not isinstance(server["tools"], list)
+                              or not all(isinstance(v, str) for v in server["tools"])):
+        return False
+    return True
+
+
 def merge_config(text, client, desired, previous):
     key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(client, "mcpServers")
     data = tomllib.loads(text) if client == "codex" else json.loads(jsonc_text(text), object_pairs_hook=unique_object)
     if not isinstance(data, dict) or not isinstance(data.get(key, {}), dict):
         raise ValueError("MCP settings must be an object; existing settings were preserved.")
     current = data.get(key, {})
+    official = desired[key].get("clickup_official")
+    if official is not None:
+        matches = [(name, item) for name, item in current.items()
+                   if isinstance(item, dict) and item.get("url") == OFFICIAL_CLICKUP_URL]
+        if len(matches) > 1:
+            raise ValueError("Multiple official ClickUp MCP endpoints are configured. Remove duplicates manually; settings were preserved.")
+        for alias, item in matches:
+            if not valid_official_oauth_server(item, official):
+                raise ValueError("Existing official ClickUp MCP alias " + alias +
+                                 " is not a safe browser-OAuth configuration. Resolve it manually; settings were preserved.")
+        if "clickup_official" in current and not valid_official_oauth_server(current["clickup_official"], official):
+            raise ValueError("Existing clickup_official is not the expected browser-OAuth MCP. Resolve it manually; settings were preserved.")
     owned, changes = dict(previous), {}
     for name, server in desired[key].items():
         if name in current:
@@ -157,16 +208,41 @@ def merge_config(text, client, desired, previous):
                 if current[name] != baseline[key][name]:
                     raise ValueError("Refusing to replace an existing or locally modified MCP server: " + name)
                 changes[name] = server
+            elif name == "clickup_official" and name not in previous:
+                # Validated above, including any optional display/client settings.
+                continue
             elif name != "clickup_work" and name not in previous:
-                continue  # Reuse the teammate's existing GitHub/optional server.
+                continue  # Reuse an existing user-managed GitHub/optional server.
             else:
                 raise ValueError("Refusing to replace an existing or locally modified MCP server: " + name)
         else:
-            if name != "clickup_work" and any(s.get("url") == server.get("url") for s in current.values()
-                                                 if isinstance(s, dict) and server.get("url")):
+            if name == "clickup_official" and official is not None:
+                # An alternate name can be reused only after validation above.
+                if any(alias != name for alias, _ in matches):
+                    continue
+            elif name != "clickup_work" and any(s.get("url") == server.get("url") for s in current.values()
+                                                   if isinstance(s, dict) and server.get("url")):
                 continue
             changes[name] = server
         owned[name] = server
+    if client == "kilo" and official is not None and "github" not in desired[key]:
+        # Migrate only an unchanged, installer-owned remote GitHub MCP. The
+        # remote auth server lacks DCR support for Kilo; leave unowned/edited
+        # user configurations untouched. Disabling is reversible and avoids
+        # mutating unrelated JSONC/TOML or erasing an existing user's settings.
+        old_github = previous.get("github")
+        active_github = current.get("github")
+        if (isinstance(old_github, dict)
+                and old_github.get("url") == GITHUB_REMOTE_URL
+                and isinstance(active_github, dict)
+                and active_github == old_github):
+            disabled = {**active_github, "enabled": False}
+            if disabled != active_github:
+                changes["github"] = disabled
+            owned["github"] = disabled
+        elif old_github is not None:
+            # The user edited/deleted this server; relinquish ownership.
+            owned.pop("github", None)
     if not changes:
         return text, owned
     if client == "codex":
@@ -284,13 +360,67 @@ def setup(args, home):
     save_json(home / "installation.json", {"runtime": str(runtime)})
     print("\nSetup complete: Python environment, Krodak CLI, " + ("external skills unchanged" if args.skip_skills else "managed skills") + ", and MCP configuration.")
     print("Client settings: " + str(destination))
-    print("Reload your agent. Each teammate signs in with their own accounts:")
-    print("  " + NPX + " cup init")
-    print("  " + NPX + " cup auth")
-    print("  gh auth login")
-    if not shutil.which("gh"):
-        print("GitHub CLI is missing. Install it from https://cli.github.com/ before using the local GitHub workflow.")
-    print("Ask your agent to verify account access and bind the working project before task writes.")
+    if args.command != "onboard":
+        print("Reload your agent. Each teammate signs in with their own accounts:")
+        print("  " + NPX + " cup init")
+        print("  " + NPX + " cup auth")
+        print("  gh auth login")
+        if not shutil.which("gh"):
+            print("GitHub CLI is missing. Install it from https://cli.github.com/ before using the local GitHub workflow.")
+        print("Ask your agent to verify account access and bind the working project before task writes.")
+
+
+def setup_host(args, home):
+    """Install the agent skills and hosted OAuth MCP. Never read local CLI credentials."""
+    if args.profile not in ("default", "official"):
+        raise ValueError("OAuth onboarding supports only the official ClickUp MCP; omit --profile context.")
+    project = args.project_dir.resolve() if args.project_dir else None
+    if project and not project.is_dir():
+        raise ValueError("The project directory must already exist.")
+    destination = config_destination(args.client, project).resolve()
+    receipt_path = home / "clients" / (hashlib.sha256(str(destination).encode()).hexdigest() + ".json")
+    receipt = read_json(receipt_path, {})
+    original = destination.read_bytes() if destination.exists() else None
+    source = original.decode("utf-8") if original is not None else ("" if args.client == "codex" else "{}\n")
+    skills = skill_directory("copilot" if args.client == "vscode" else args.client, project_dir=project)
+    if not args.skip_skills:
+        install(skills, update=True, dry_run=True)
+    merged, owned = merge_config(source, args.client, desired_host_config(args.client),
+                                 receipt.get("servers", {}))
+    if (destination.read_bytes() if destination.exists() else None) != original:
+        raise ValueError("Client settings changed during OAuth setup. Rerun; settings were preserved.")
+    if not args.skip_skills:
+        install(skills, update=True)
+    if merged != source:
+        if original is not None:
+            backup = destination.with_name(destination.name + ".clickup-skills-backup-" + uuid.uuid4().hex[:12])
+            atomic_write(backup, source)
+            print("Settings backup: " + str(backup))
+        atomic_write(destination, merged)
+    save_json(receipt_path, {"config": str(destination), "servers": owned, "mode": "oauth"})
+    print("\nOAuth setup complete: " + ("external skills unchanged" if args.skip_skills else "six managed skills") +
+          ", official ClickUp MCP configuration. GitHub uses your authenticated gh CLI.")
+    print("Client settings: " + str(destination))
+    print("No ClickUp API token, local workflow runtime, or Krodak CLI is required by this mode.")
+    key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(args.client, "mcpServers")
+    config = tomllib.loads(merged) if args.client == "codex" else json.loads(jsonc_text(merged))
+    aliases = [name for name, server in config[key].items() if isinstance(server, dict)
+               and server.get("url") == "https://mcp.clickup.com/mcp"]
+    print("Official ClickUp MCP server name: " + (", ".join(aliases) if aliases else "(not found; check configuration)"))
+    if args.client == "kilo":
+        github = config[key].get("github")
+        if isinstance(github, dict) and github.get("url") == GITHUB_REMOTE_URL:
+            if github.get("enabled", True) is False:
+                print("Previously installer-managed incompatible GitHub MCP is disabled; use gh instead.")
+            else:
+                print("WARNING: A user-managed remote GitHub MCP is still enabled. It may fail OAuth in Kilo.")
+                print("The installer preserved it; use gh or disable this remote server manually.")
+        else:
+            print("GitHub in Kilo: use your authenticated gh CLI. No remote GitHub MCP required.")
+    if "clickup_work" in config[key]:
+        print("An existing local clickup_work server was preserved. It does NOT share the hosted OAuth session.")
+    print("Reload the agent; authorize the official ClickUp MCP in its browser OAuth flow if prompted.")
+    print("Only the running agent can verify its hosted OAuth, tools, account, workspace and task scope.")
 
 
 def main():
@@ -304,12 +434,34 @@ def main():
         command = [str(runtime_python(runtime)), "-I", str(runtime / "scripts/run_work.py")]
         raise SystemExit(subprocess.call(command + (["--cup"] if args[0] == "cup" else []) + args[1:]))
     parser = argparse.ArgumentParser(description=__doc__, epilog="Also: cup <arguments> or work <cu-work arguments> after setup.")
-    parser.add_argument("command", choices=["setup", "update"])
-    parser.add_argument("--client", choices=CLIENTS, required=True)
+    parser.add_argument("command", choices=["setup", "update", "onboard"])
+    parser.add_argument("--client", choices=CLIENTS)
+    parser.add_argument("--mode", choices=["oauth", "cli"],
+                        help="Onboarding mode: oauth (default, hosted official MCP) or cli (personal API token/full helper).")
     parser.add_argument("--skip-skills", action="store_true", help="Leave externally installed skills untouched (e.g. npx skills add)")
     parser.add_argument("--profile", choices=["default", "official", "context"], default="default")
     parser.add_argument("--project-dir", type=Path, help="Install project skills and config instead of personal settings")
-    setup(parser.parse_args(args), home)
+    options = parser.parse_args(args)
+    if options.command != "onboard" and options.mode is not None:
+        parser.error("--mode is supported only for onboard; setup/update retain their existing CLI behavior.")
+    if options.client is None:
+        if options.command == "onboard":
+            from onboard import choose_client
+            options.client = choose_client()
+        else:
+            parser.error("--client is required for setup and update.")
+    if options.command == "onboard":
+        from onboard import run_onboarding
+        mode = options.mode or "oauth"
+        if mode == "oauth":
+            setup_host(options, home)
+            run_onboarding(None, mode="oauth")
+        else:
+            setup(options, home)
+            active = read_json(home / "installation.json", {})
+            run_onboarding(Path(active["runtime"]), mode="cli")
+    else:
+        setup(options, home)
 
 
 if __name__ == "__main__":

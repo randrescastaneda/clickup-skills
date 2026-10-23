@@ -77,14 +77,34 @@ def main():
     assert "npx skills add randrescastaneda/clickup-skills -g" in installation
     assert "--skip-skills" in installation
     command = "npx --yes github:randrescastaneda/clickup-skills setup --client kilo"
-    assert command in installation and command in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert command in installation  # Backward-compatible software-only CLI remains documented
+    assert "npx --yes github:randrescastaneda/clickup-skills onboard" in installation
+    assert "npx --yes github:randrescastaneda/clickup-skills onboard" in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "browser-based OAuth" in installation and "--mode cli" in installation
+    assert 'href="clients.html"' in installation, "Installation must link to per-agent instructions"
+    assert "GitHub MCP" in installation and "does not install GitHub MCP" in installation
+    clients_html = (output / "clients.html").read_text(encoding="utf-8")
+    for agent_label in ("Kilo Code", "Codex CLI", "Claude Code", "GitHub Copilot CLI",
+                        "GitHub Copilot Chat in VS Code", "OpenCode", "Posit Assistant"):
+        assert agent_label in clients_html, "Missing client guide: " + agent_label
+    for command in ("onboard --client kilo", "onboard --client codex",
+                    "onboard --client claude", "onboard --client copilot",
+                    "onboard --client vscode --project-dir /absolute/path/to/project"):
+        assert command in clients_html, "Missing exact client command: " + command
+    for verification in ("codex mcp login clickup_official", "claude mcp list",
+                         "copilot mcp list", "Agent mode", "gh auth status"):
+        assert verification in clients_html, "Missing client verification: " + verification
+    assert "not" in clients_html.lower() and "personal API token" in clients_html
     assert "npm install -g " + cup["package"] + "@" + cup["version"] not in installation
     setups = json.loads((output / "client-setups.json").read_text(encoding="utf-8"))
-    config = json.loads((ROOT / "profiles/default.json").read_text(encoding="utf-8"))
     for client, data in setups.items():
+        config = json.loads((ROOT / "profiles" / ("official.json" if data["automatic"] else "default.json")).read_text(encoding="utf-8"))
+        if data["automatic"]:
+            config["mcpServers"].pop("clickup_work")
+            config["mcpServers"].pop("github")
         assert data["config"] == render_config(client if client in CONFIG_CLIENTS else "portable", config)
         if data["automatic"]:
-            assert "setup --client " + client in data["commands"] and "scripts/" not in data["commands"]
+            assert "onboard --client " + client in data["commands"] and "scripts/" not in data["commands"]
     index = json.loads((output / "search-index.json").read_text(encoding="utf-8"))
     assert {p["url"] for p in index} == {p + ".html" for p in manifest["pages"]}
     assert all(p["title"] and len(p["text"]) > 40 for p in index)

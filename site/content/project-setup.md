@@ -34,7 +34,7 @@ Replace every placeholder. The agent should ask only for missing essentials and 
 
 ## What the agent records
 
-The tracked `.clickup/project.json` holds objective, IDs, repository/base, routing policy, and the exact status mapping. The helper’s `init` creates it locally with no remote task writes and refuses to overwrite an existing binding. Review an existing binding before making any scope change.
+The tracked `.clickup/project.json` holds objective, IDs, repository/base, routing policy, and the exact status mapping. **Default OAuth mode:** the agent can prepare this local file after verifying the objective and IDs with the official MCP; it does **not** call `cu-work` or write helper receipts. **Optional token-backed helper mode:** `cu-work init` creates the file locally without remote task writes and refuses to overwrite an existing binding. Review any existing binding before changing scope.
 
 Commit it only if its identifiers and objective are suitable for the repository’s audience. Keep credentials in each teammate’s private authentication or environment. Local focus and operation receipts live in Git worktree state, outside tracked project files.
 
@@ -58,6 +58,6 @@ Multiple roots may share the same home List. Roots in different Lists require se
 
 ## Parallel work and ownership
 
-Use separate Git worktrees for concurrent implementation and explicit task IDs for each agent. Agents in one worktree share focus and receipts. Receipts serialize local helper writes; they do not provide a cross-machine lock. Assign one owner to each task’s writes to avoid races.
+Use separate Git worktrees for concurrent implementation and explicit task IDs for each agent. **Only the local helper** shares focus and receipts between users of a worktree; direct official-MCP OAuth calls do not acquire that journal or lock. Neither mode provides a cross-machine lock. Assign one owner to each task's writes to avoid races.
 
 Next: [use the plugin in everyday work](using-the-plugin.html).

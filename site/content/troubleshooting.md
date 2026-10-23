@@ -9,13 +9,13 @@ Start with the actual agent session and working repository. Authentication in an
 
 | Symptom | What to check / ask the agent |
 | --- | --- |
-| `cu-work` is missing | With npx setup, use the installed workflow MCP or the managed `npx --yes github:randrescastaneda/clickup-skills work` proxy. A global `cu-work` command is only expected for the advanced manual install |
-| The plugin installed but tasks cannot be read | Verify personal ClickUp sign-in, the actual Workspace/List access and available runtime |
+| `cu-work` is missing | **Normal in default OAuth mode:** use the official ClickUp MCP and `gh` directly. Only `onboard --mode cli` installs the persistent local helper; that mode exposes `clickup_work` and the managed `npx --yes github:randrescastaneda/clickup-skills work` proxy. |
+| The plugin installed but tasks cannot be read | OAuth mode: check **this agent's** `clickup_official` browser authorization and its Workspace/List read permission. Full-helper mode: check separate `cup` token authentication and project binding. |
 | Skills are not discovered | Use the actual agent’s discovery path, reload the session, and add the project instruction; avoid duplicate copies |
 | MCP config is rejected | Choose the correct renderer: VS Code, Copilot, Codex, Kilo and Posit use different shapes |
-| GitHub MCP works but helper GitHub calls fail | Authenticate `gh` in the helper’s environment; hosted MCP OAuth is separate |
+| GitHub cannot connect | Default setup uses `gh`: check `gh auth status` and repository access. GitHub MCP is optional and has separate authentication. In Kilo, the previous remote GitHub MCP may fail due to unsupported dynamic registration; the installer disables only an unchanged, installer-owned copy. |
 | GitHub reads work but writes return 403 | Check the GitHub App on the repository owner’s account/organization and its selected repository permissions |
-| “No binding” / origin mismatch | Bind the working project repository and verify its actual origin; do not bind the plugin checkout by accident |
+| “No binding” / origin mismatch | OAuth mode: verify the project's `.clickup/project.json` directly (or obtain approved exact task scope); the helper may not be installed. Full-helper mode: bind the **working project repository**, verify its origin and its local helper receipt state. Never bind the plugin checkout by accident. |
 | Task is rejected as out of scope | Re-read native ID, Workspace, home List and ancestry; review cross-list moves before changing scope |
 | Status change fails | Discover the List’s exact status names and update `github.status_map` deliberately |
 | A task write timed out | Inspect receipts and complete remote evidence before retrying; do not switch providers to replay |

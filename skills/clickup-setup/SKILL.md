@@ -1,40 +1,52 @@
 ---
 name: clickup-setup
-description: Install, configure, verify, or update ClickUp Skills in an agent environment. Use when a teammate asks to install ClickUp Skills, finish Vercel skills CLI installation, set up Python/Krodak CLI/MCP, or resolve installation conflicts.
+description: Install, authenticate, validate, or update ClickUp Skills for OAuth-based agents or the token-backed local helper. Use for team onboarding, safe MCP configuration, choosing a backend, or diagnosing setup.
 ---
 
-# Set up ClickUp Skills for an agent
+# Guided ClickUp Skills setup
 
-This skill guides **local environment setup**, not changes to remote ClickUp tasks or GitHub issues. Detect the actual agent/client (Codex, Kilo, Claude Code, Copilot, or supported VS Code configuration), whether setup is personal or project-scoped, and which steps are already complete. Explain intended changes before running installation commands. Never request or print an access token in chat.
+Do not request or copy personal access tokens in chat. The user's **agent/client**, not this skill, performs hosted ClickUp OAuth. Confirm the actual coding agent and whether its config is global or project-scoped. Existing local settings, skills managed by another installer, and authorized sessions must be preserved.
 
-## Standard skills installation (recommended for Skills CLI users)
+## Recommended: one terminal command, one agent action
 
-1. Confirm Node.js **22.20+**, Python **3.11+**, and Git are available. The Vercel `skills` CLI discovers each `skills/<name>/SKILL.md` in this repository. From the working project, or with `-g` for personal skills across projects, run:
+Prerequisites: Node.js 22+, Python 3.11+, Git, and GitHub CLI (`gh`).
 
-   ```bash
-   npx skills add randrescastaneda/clickup-skills -g
-   ```
+```bash
+npx --yes github:randrescastaneda/clickup-skills onboard
+```
 
-   Let the teammate choose the applicable agent. For non-interactive setup, add `-a codex`, `-a kilo`, `-a claude-code`, or `-a github-copilot` and `-y` as appropriate. The Skills CLI installs **skill files only**; it does not install the Python runtime, Krodak's CLI, or MCP configuration.
+The terminal chooser defaults to **Kilo Code**; `--client kilo|codex|claude|copilot` skips it. The default `--mode oauth` installs the six workflow skills and configures the **official hosted ClickUp MCP** and authenticated GitHub CLI access (`gh`) for every supported client, without provisioning Krodak's CLI or prompting for a personal ClickUp API token. Existing `clickup_work` is preserved but is **not** authenticated by hosted OAuth. The terminal checks `gh` authentication, launching GitHub's browser flow if required. The remote GitHub MCP does not support dynamic client registration for Kilo, so Kilo's default OAuth setup does **not** add that server. It disables only an unchanged entry this installer previously added; user-managed GitHub servers remain untouched (and must be tested or disabled by the user). Validate same-URL ClickUp MCP aliases for OAuth safety before reuse; refuse duplicates.
 
-2. Complete local setup for the **same** agent without touching the Skills CLI-managed copies. Example for Kilo:
+**After reloading the actual agent**, discover the six skills and current MCP tool schemas. Verify the official ClickUp MCP's OAuth status through that client's authorization UI, its authenticated Workspace, exact intended task/List access, and GitHub account/repository access via `gh` (hosted GitHub MCP OAuth, if used, is independent of `gh`). A successful terminal install proves only software/configuration, **not** hosted OAuth or live task permission. Never write a task during discovery.
 
-   ```bash
-   npx --yes github:randrescastaneda/clickup-skills setup --client kilo --skip-skills
-   ```
+**Client-specific authorization:** Kilo uses Settings → Agent Behaviour → MCP Servers; Codex uses `codex mcp list` and, when needed, `codex mcp login clickup_official`; Claude Code uses `/mcp`; GitHub Copilot CLI uses `/mcp` or `copilot mcp list`; VS Code Copilot Chat requires the trusted project and Agent mode. See [per-agent setup details](../../docs/clients.md). If a client's browser OAuth flow is unsupported or fails, stop and report it instead of improvising static credentials.
 
-   Replace `kilo` with `codex`, `claude`, or `copilot`. For VS Code MCP configuration, use `--client vscode --project-dir /absolute/path/to/project`; the chosen agent still owns skill discovery. The installer creates a persistent private Python runtime, installs `@krodak/clickup-cli@latest`, and safely merges MCP settings. It does not depend on the transient npx cache for the installed MCP. `--skip-skills` also works for `update`.
+In Kilo, official MCP is a remote server at `https://mcp.clickup.com/mcp`; Kilo can prompt for browser OAuth when it connects. If the current config already contains an equivalent endpoint under a different name, reuse its actual name rather than adding duplicate servers.
 
-3. **Alternative for a new teammate who wants a single command:** run `npx --yes github:randrescastaneda/clickup-skills setup --client CLIENT` instead. That installer also manages skill copies. Do **not** mix the two skill managers for the same destination. If the Skills CLI already installed the skills, use `--skip-skills` rather than overwriting or deleting those copies. An existing Claude marketplace plugin may already supply skills and servers; inspect it before installing duplicates.
+## Explicit full-helper mode (personal token)
 
-## Authentication and checks
+```bash
+npx --yes github:randrescastaneda/clickup-skills onboard --mode cli --client kilo
+```
 
-- Install GitHub CLI from https://cli.github.com/ if missing. Each teammate signs in locally, with their own accounts, using `npx --yes github:randrescastaneda/clickup-skills cup init`, `npx --yes github:randrescastaneda/clickup-skills cup auth`, and `gh auth login` as needed. Do not copy or collect tokens. A host GitHub MCP does **not** replace the local helper's requirement for `gh`.
-- Reload the agent. Verify installed skill discovery, the `clickup_work` MCP tools, GitHub access, and an authorized ClickUp task read. Do not infer remote access from a successful local installation. Use `clickup-bind-project` only after the project owner supplies or approves the objective and root task.
-- Report which steps actually passed and what still needs the teammate's sign-in, permissions, or project information. Do not create tasks or change remote status during setup.
+This installs the private Python helper runtime, Krodak's latest ClickUp CLI and managed `clickup_work` MCP in addition to skills/GitHub tooling. The upstream `cup init` terminal flow may require a personal API token created in [ClickUp Settings → Apps](https://app.clickup.com/settings/apps). `cup auth` verifies it; already valid sign-ins are reused. The helper's strict workspace/list/root validation and durable receipts also require a **verified project binding**; a running local MCP process alone is not proof of authorized task access.
 
-## Updating without conflicting managers
+The previous `setup --client kilo` and `update --client kilo` commands retain their software-only full-helper behavior. Do not switch an uncertain write from the official MCP to the CLI. Hosted OAuth credentials are **never** imported into `cup`.
 
-For Skills CLI-managed installations, run `npx skills check` then `npx skills update -g` for personal skills (or `npx skills update -p` for project skills), **and separately** `npx --yes github:randrescastaneda/clickup-skills update --client CLIENT --skip-skills` to refresh the private Python/Krodak runtime and MCP paths. Re-run with the same project directory if relevant. For custom-installer-managed skills, only use its `update --client CLIENT` command; it refreshes those copies along with the runtime.
+## Vercel-managed skills (alternative)
 
-Never run upgrades during an active task mutation or automatically on MCP startup. Check conflicts and back up existing configuration. After an update, reload and verify tools; read the bound task again before any write.
+```bash
+npx skills add randrescastaneda/clickup-skills -g
+npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --skip-skills
+```
+
+This leaves Vercel-owned skills untouched while configuring the OAuth server and GitHub authentication. For Vercel-managed full-helper mode, add `--mode cli` to the second command. Do not use two installers to manage the same skill copies. When updating, use Vercel's updater for skills and `update --client CLIENT --skip-skills` for a separately installed local CLI runtime. For an OAuth-only installation, rerun `onboard --client CLIENT --skip-skills` to reconcile host server configuration; Vercel updates skills separately.
+
+VS Code MCP requires `--client vscode --project-dir /absolute/project`. Legacy agents, OpenCode and Posit Assistant use the advanced setup matrix. For team usage, each teammate signs in with their own account. Native ClickUp–GitHub integration, automations, and any continuously running worker are separate administrator tasks.
+
+## Before the first write
+
+- Identify **OAuth host-agent** versus **full helper** explicitly. OAuth operations must follow the [guarded issue-first host protocol](../clickup-github/references/official-mcp-issue-first.md); agent-enforced protections do not substitute for the helper journal.
+- Verify exact GitHub repo/base, ClickUp Workspace/List/root ancestry, allowed task and write budget. If no verified binding/scope exists, do not write.
+- Report discovered tools, authenticated identities, missing permissions, and precisely which component requires action. Never announce `clickup_work` authenticated merely because it starts.
+- For an update, preserve existing settings, refuse local conflicts, reload the agent and re-check actual discovery. No automatic update during task writes.

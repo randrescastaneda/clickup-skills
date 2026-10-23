@@ -15,6 +15,17 @@ Read the binding and inventory only tools actually present in this session. The 
 | Broad workspace search / official-specific functionality | `official` | Official search and service coverage; inspect limits |
 | Branch, PR, checks, issue | `gh` or GitHub MCP | Use the available tool with complete fields and least extra work |
 
+**Authentication-aware routing:** The table above describes a **full local-helper**
+installation with a working `cup` token. In the default **OAuth host-agent**
+installation, use the connected official ClickUp MCP for ClickUp operations
+and authenticated `gh` or GitHub MCP for GitHub; never choose `cup`,
+`rest-mcp`, or unbound `clickup_work` merely because it appears in a client
+tool list. Those are separate authentication and receipt domains. Before
+any host write, load the [guarded OAuth issue-first protocol](../clickup-github/references/official-mcp-issue-first.md).
+The local helper's `route_operation` only advises and may lack a project
+binding in host-mode sessions. No automatic fallback to the CLI after a
+host write failure.
+
 Run, for example:
 
 ```bash
