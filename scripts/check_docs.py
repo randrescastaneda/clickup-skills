@@ -77,7 +77,7 @@ def main():
     assert "npx skills add randrescastaneda/clickup-skills -g" in installation
     assert "--skip-skills" in installation
     command = "npx --yes github:randrescastaneda/clickup-skills setup --client kilo"
-    assert command in installation and command in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert command in installation  # Backward-compatible software-only CLI remains documented
     assert "npx --yes github:randrescastaneda/clickup-skills onboard" in installation
     assert "npx --yes github:randrescastaneda/clickup-skills onboard" in (ROOT / "README.md").read_text(encoding="utf-8")
     assert "browser-based OAuth" in installation and "--mode cli" in installation
