@@ -399,7 +399,7 @@ def setup_host(args, home):
         atomic_write(destination, merged)
     save_json(receipt_path, {"config": str(destination), "servers": owned, "mode": "oauth"})
     print("\nOAuth setup complete: " + ("external skills unchanged" if args.skip_skills else "six managed skills") +
-          ", official ClickUp MCP and GitHub MCP configuration.")
+          ", official ClickUp MCP configuration" + (". GitHub uses gh in Kilo." if args.client == "kilo" else " and optional GitHub MCP configuration."))
     print("Client settings: " + str(destination))
     print("No ClickUp API token, local workflow runtime, or Krodak CLI is required by this mode.")
     key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(args.client, "mcpServers")
@@ -407,6 +407,16 @@ def setup_host(args, home):
     aliases = [name for name, server in config[key].items() if isinstance(server, dict)
                and server.get("url") == "https://mcp.clickup.com/mcp"]
     print("Official ClickUp MCP server name: " + (", ".join(aliases) if aliases else "(not found; check configuration)"))
+    if args.client == "kilo":
+        github = config[key].get("github")
+        if isinstance(github, dict) and github.get("url") == GITHUB_REMOTE_URL:
+            if github.get("enabled", True) is False:
+                print("Previously installer-managed incompatible GitHub MCP is disabled; use gh instead.")
+            else:
+                print("WARNING: A user-managed remote GitHub MCP is still enabled. It may fail OAuth in Kilo.")
+                print("The installer preserved it; use gh or disable this remote server manually.")
+        else:
+            print("GitHub in Kilo: use your authenticated gh CLI. No remote GitHub MCP required.")
     if "clickup_work" in config[key]:
         print("An existing local clickup_work server was preserved. It does NOT share the hosted OAuth session.")
     print("Reload the agent; authorize the official ClickUp MCP in its browser OAuth flow if prompted.")
