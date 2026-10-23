@@ -115,7 +115,11 @@ def client_setups():
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
             commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile default"
-        config = json.loads((ROOT / "profiles/default.json").read_text(encoding="utf-8"))
+        config = json.loads((ROOT / "profiles/" / ("official.json" if automatic else "default.json")).read_text(encoding="utf-8"))
+        if automatic:
+            config["mcpServers"].pop("clickup_work")
+            if name == "kilo":
+                config["mcpServers"].pop("github")
         setups[name] = {"text": text, "commands": commands, "automatic": automatic, "config": render_config(name if name in CONFIG_CLIENTS else "portable", config), "skills": "Project skills: .github/skills/" if name == "vscode" else "Personal skill path: ~/" + SKILL_PATHS[name][0] if name in SKILL_PATHS else "No automated skill installer target for this client; confirm its supported skill discovery."}
     return setups
 
