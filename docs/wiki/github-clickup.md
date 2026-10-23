@@ -127,6 +127,15 @@ silently create or redirect work to a different repository.
 
 ## Use host MCPs directly
 
+For **OAuth-only onboarding**, use
+[the fail-closed host issue-first protocol](../../skills/clickup-github/references/official-mcp-issue-first.md)
+*before any write*. Hosted official ClickUp OAuth does not authenticate the
+separate local `cup` CLI or provide helper receipts/locks. When the agent
+cannot verify a bound Workspace/List/root/repository or a complete prior
+operation outcome, stop instead of creating a duplicate.
+
+## Use host MCPs directly
+
 Without the local executables, load `clickup-github` and `clickup-work-task`.
 Discover current tool schemas, then:
 
