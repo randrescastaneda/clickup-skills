@@ -83,8 +83,12 @@ def main():
     assert "browser-based OAuth" in installation and "--mode cli" in installation
     assert "npm install -g " + cup["package"] + "@" + cup["version"] not in installation
     setups = json.loads((output / "client-setups.json").read_text(encoding="utf-8"))
-    config = json.loads((ROOT / "profiles/default.json").read_text(encoding="utf-8"))
     for client, data in setups.items():
+        config = json.loads((ROOT / "profiles" / ("official.json" if data["automatic"] else "default.json")).read_text(encoding="utf-8"))
+        if data["automatic"]:
+            config["mcpServers"].pop("clickup_work")
+            if client == "kilo":
+                config["mcpServers"].pop("github")
         assert data["config"] == render_config(client if client in CONFIG_CLIENTS else "portable", config)
         if data["automatic"]:
             assert "onboard --client " + client in data["commands"] and "scripts/" not in data["commands"]
