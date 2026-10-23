@@ -96,7 +96,7 @@ block. ClickUp's `markdown_description` escaped/reformatted the markers,
 while `text_content` preserved them literally. This distinction is now
 mandatory in the host workflow guidance.
 
-**Limits:** This proves a successful agent-controlled existing-issue reuse
+**Kilo 23 October acceptance:** all six skills, ClickUp OAuth, real task access and agent-enforced checks passed. Two installer issues were found: unvalidated alternate-name ClickUp MCP endpoints, and a GitHub remote MCP that Kilo could not authorize because it lacks dynamic client registration. The installer now rejects unsafe/duplicate ClickUp aliases and uses authenticated `gh` for Kilo, disabling only an unchanged previously installer-managed GitHub remote entry. A subsequent Kilo live test is still necessary to confirm the corrected migration on the user's machine.\n\n**Limits:** This proves a successful agent-controlled existing-issue reuse
 sequence, not a local-helper transaction or guaranteed exact-once write.
 It does not validate new-issue creation, induced network timeouts,
 simultaneous writers, production comment threading, MCP quota accounting
