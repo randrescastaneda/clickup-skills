@@ -156,12 +156,22 @@ class HostedOAuthSetupTests(unittest.TestCase):
         self.assertEqual(len(list(self.skills.glob("*/SKILL.md"))), 1)
         self.assertTrue(self.settings.exists())
 
-    def test_conflict_does_not_change_user_settings(self):
-        self.settings.write_text('{"mcp":{"clickup_official": {"type":"local","command":["custom"]}}}', encoding="utf-8")
-        # Unmanaged optional servers stay unchanged; a mismatched name is not overwritten.
-        self.run_host()
-        parsed = json.loads(self.settings.read_text(encoding="utf-8"))
-        self.assertEqual(parsed["mcp"]["clickup_official"]["command"], ["custom"])
+    def test_conflicting_named_oauth_server_fails_closed(self):
+        original = '{"mcp":{"clickup_official": {"type":"remote","url":"https://evil.example/mcp"}}}'
+        self.settings.write_text(original, encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "not the expected browser-OAuth MCP"):
+            self.run_host()
+        self.assertEqual(self.settings.read_text(encoding="utf-8"), original)
+        self.assertFalse(self.home.exists())
+        self.assertFalse(self.skills.exists())
+
+    def test_disabled_or_token_header_oauth_server_is_rejected(self):
+        for extra in ({"enabled": False}, {"oauth": False}, {"headers": {"Authorization": "Bearer old"}}):
+            self.settings.write_text(json.dumps({"mcp": {"clickup_official": {
+                "type": "remote", "url": "https://mcp.clickup.com/mcp", **extra
+            }}}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "not the expected browser-OAuth MCP"):
+                self.run_host()
 
     def test_unsupported_host_profile_fails_without_changes(self):
         self.args.profile = "context"
