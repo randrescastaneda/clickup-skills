@@ -107,8 +107,8 @@ def run_onboarding(runtime: Path | None, *, mode: str = "oauth") -> None:
         authenticate_clickup(cup_command)
     authenticate_github()
     if mode == "oauth":
-        print("\nTerminal setup complete: official ClickUp MCP and GitHub MCP configured, GitHub CLI authenticated.")
-        print("ClickUp OAuth is NOT authenticated or verified by this terminal command.")
+        print("\nTerminal setup complete: official ClickUp MCP configured and GitHub CLI authenticated.")
+        print("ClickUp OAuth is NOT authenticated or verified by this terminal command. GitHub MCP is optional and client-dependent.")
         print("Restart/reload the agent, authorize clickup_official using its browser OAuth prompt,")
         print("and verify read-only Workspace/task access and discovered schemas.")
         print("This mode uses agent-directed host tools, NOT the helper's durable journal or scope enforcement.")
