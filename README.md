@@ -20,7 +20,7 @@ This repository supplies the shared workflow, rather than another broad API wrap
 | Claude Code marketplace + portable/Codex manifests | Team installation from this repository |
 | Copilot, Kilo, VS Code, and Posit adapters | Render each client's own MCP format from the same profiles |
 | Optional MCP profiles | Official ClickUp, rich-context community MCP, and REST community MCP |
-| GitHub MCP configuration | Host-native GitHub access alongside the workflow tools |
+| Optional GitHub MCP configuration | Advanced agent-specific option; default onboarding uses authenticated `gh` |
 
 There is no paid integration dependency. ClickUp/GitHub service permissions,
 rate limits, plan features, and your model provider's charges still apply.
@@ -33,7 +33,7 @@ rate limits, plan features, and your model provider's charges still apply.
 npx --yes github:randrescastaneda/clickup-skills onboard
 ```
 
-The installer asks which coding agent to use (**Kilo Code is the default**). It installs six portable skills, configures **ClickUp's official hosted MCP**, and verifies GitHub CLI sign-in. **Kilo Code uses the authenticated `gh` CLI for GitHub** rather than automatically installing the remote GitHub MCP, whose OAuth flow is incompatible with Kilo. Other supported agents may configure a GitHub MCP, subject to their own authentication. Existing agent settings are preserved. It does **not** ask for a ClickUp personal API token or install the Krodak CLI.
+The installer asks which coding agent to use (**Kilo Code is the default**). It installs six portable skills, configures **ClickUp's official hosted MCP**, and verifies GitHub CLI sign-in. It uses authenticated **`gh` for GitHub in all clients**; a GitHub MCP is optional and must be authenticated separately. Existing agent settings are preserved. It does **not** ask for a ClickUp personal API token or install the Krodak CLI. [See the exact command and authorization steps for Kilo, Codex, Claude Code, Copilot CLI and VS Code Copilot Chat](docs/clients.md).
 
 **Then reload your coding agent and paste:**
 
@@ -118,7 +118,7 @@ python3 scripts/configure.py --client codex --profile default
 
 Merge the printed TOML into your Codex MCP configuration; the script never edits
 your configuration. Restart/reload the client if needed. The skill installer
-copies the same five skills and their license, and refuses conflicting or locally
+copies the same six skills and their license, and refuses conflicting or locally
 modified skills. Use `--update` to refresh unmodified managed copies after updating
 this checkout, or opt into `--method link`. Clients supporting portable Agent Plugins can install the root
 `plugin.json`/`mcp.json` package directly.
@@ -143,7 +143,16 @@ parts have been tested. Configuration checks do not prove installed-client behav
 
 ## Bind each working project
 
-Run in the repository you want the agent to work on, not in this plugin checkout:
+**OAuth-first installation:** The agent uses the official ClickUp MCP to verify the project scope, then writes the approved `.clickup/project.json` locally. No `cu-work` binary, personal token or helper journal is needed. Ask your agent:
+
+```prompt
+Bind this working repository to ClickUp Skills. Verify its GitHub origin and
+base branch, my ClickUp Workspace, home List, and approved root task IDs.
+Ask me for missing facts, read any existing binding, and make only the local
+binding after verification. Do not create or modify remote tasks.
+```
+
+**Advanced: token-backed full helper only (`--mode cli`).** The following `cu-work` commands require the separately installed local helper and its authenticated CLI. Run them in the repository you want the agent to work on, not in this plugin checkout:
 
 ```bash
 cu-work --project-dir /absolute/path/to/project init \
@@ -177,14 +186,14 @@ For automatic discovery, add the short instruction from `clickup-bind-project`
 to the working project's existing AGENTS.md / CLAUDE.md. Installation alone does
 not force every agent to load a skill in every repository.
 
-## Choose a backend
+## Advanced: choose a local-helper backend
 
 | Profile / backend | Use | Execution |
 | --- | --- | --- |
 | `cup` | Ordinary task operations with compact JSON/file-based text | Directly by `cu-work`; default runtime |
 | `rest-mcp` | Free Python MCP with broad API operations | Directly by `cu-work`, or host tools |
 | `context-mcp` | Rich task context, comments, images | Host tools; optional read-minimal profile |
-| `official` | Official workspace search and service-specific capabilities | Host tools; OAuth |
+| `official` | Default OAuth mode: agent reads/writes directly through ClickUp's official MCP | Host tools; **not** executed through `cu-work` |
 | `github-cli` / `github-mcp` | PRs, repository state, issues, and checks | `gh` in helper, or host GitHub tools |
 
 ```bash
@@ -217,6 +226,10 @@ They must enforce the same scope and completion checks themselves. Those calls
 are not proxied or journaled by `cu-work`. See [the execution contract](docs/contract.md).
 
 ## Daily workflow
+
+**In OAuth mode, ask the coding agent in plain language** to read the approved task, verify GitHub targets before new subtasks, record progress and link PR evidence. The agent follows the [guarded issue-first protocol](skills/clickup-github/references/official-mcp-issue-first.md), but does not have the local helper's durable receipts or worker.
+
+**Advanced full-helper mode (`--mode cli`)** — only here do the `cu-work` commands below apply:
 
 ```bash
 cu-work --project-dir /absolute/project focus --task 86native
@@ -256,8 +269,9 @@ Follow the [team setup wiki](docs/wiki/README.md) for native GitHub activity lin
 optional ClickUp Automations, host-MCP execution, and synchronization limits.
 Native integration is available on all ClickUp plans; GitHub Automation
 integrations require Business or above. Free MCP software does not remove plan
-limits. No OAuth integration, webhook, background worker, merge, or deployment
-is installed automatically.
+limits. No native ClickUp–GitHub connection, webhook, running background worker,
+merge, or deployment is installed automatically. Official ClickUp MCP OAuth
+is authorized separately inside the agent.
 
 An optional [comment-sync worker](docs/sync-worker.md) can poll explicitly listed
 tasks when agents are offline. It defaults to a read-only preview; `--apply
