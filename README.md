@@ -108,8 +108,7 @@ Claude Code:
 
 This **advanced marketplace path is separate from the recommended OAuth
 onboarding** and may configure the local workflow MCP and a GitHub MCP. It does
-not install or authenticate the Python/Krodak runtime. Prefer `onboard --client
-claude` for browser-OAuth-only setup; do not install duplicate skills or servers.
+not install or authenticate the Python/Krodak runtime. Prefer `onboard --client claude` for browser-OAuth-only setup; do not install duplicate skills or servers.
 Installing the marketplace plugin does not grant Workspace/repository access.
 
 Codex and OpenCode can use the same portable skills:
