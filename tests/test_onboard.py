@@ -98,7 +98,7 @@ class OrchestrationTests(unittest.TestCase):
             }), encoding="utf-8")
             with patch.object(onboard, "authenticate_clickup") as cup, \
                  patch.object(onboard, "authenticate_github") as gh:
-                onboard.run_onboarding(folder)
+                onboard.run_onboarding(folder, mode="cli")
             cup.assert_called_once_with(["node", "/runtime/tools/cup.js"])
             gh.assert_called_once_with()
 
@@ -107,7 +107,25 @@ class OrchestrationTests(unittest.TestCase):
             folder = Path(tmp)
             (folder / "runtime.json").write_text('{"cup_command":"not an argv list"}', encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "missing or invalid"):
-                onboard.run_onboarding(folder)
+                onboard.run_onboarding(folder, mode="cli")
+
+    def test_oauth_mode_uses_github_only_no_runtime_or_clickup_token(self):
+        with patch.object(onboard, "authenticate_clickup") as cup, \
+             patch.object(onboard, "authenticate_github") as gh:
+            onboard.run_onboarding(None, mode="oauth")
+        cup.assert_not_called()
+        gh.assert_called_once_with()
+
+    def test_oauth_is_default_even_with_existing_runtime(self):
+        with patch.object(onboard, "authenticate_clickup") as cup, \
+             patch.object(onboard, "authenticate_github") as gh:
+            onboard.run_onboarding(Path("/missing/ignored/runtime"))
+        cup.assert_not_called()
+        gh.assert_called_once_with()
+
+    def test_cli_mode_fails_when_runtime_missing(self):
+        with self.assertRaisesRegex(ValueError, "requires an installed runtime"):
+            onboard.run_onboarding(None, mode="cli")
 
 
 if __name__ == "__main__":
