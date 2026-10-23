@@ -120,7 +120,7 @@ class HostedOAuthSetupTests(unittest.TestCase):
         config = json.loads(setup.jsonc_text(config_text))
         self.assertIn("// preserve", config_text)
         self.assertEqual(config["model"], "my-model")
-        self.assertEqual(set(config["mcp"]), {"clickup_official", "github"})
+        self.assertEqual(set(config["mcp"]), {"clickup_official"})
         self.assertEqual(config["mcp"]["clickup_official"]["url"],
                          "https://mcp.clickup.com/mcp")
         self.assertFalse((self.home / "releases").exists())
@@ -173,6 +173,89 @@ class HostedOAuthSetupTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "not the expected browser-OAuth MCP"):
                 self.run_host()
 
+    def test_valid_alternate_name_is_reused_without_creating_duplicate(self):
+        original = '{ // keep personal settings\n"mcp":{"clickup_gpid":{"type":"remote","url":"https://mcp.clickup.com/mcp","enabled":true,"timeout":15000}},\n"model":"my-choice"\n}'
+        self.settings.write_text(original, encoding="utf-8")
+        self.run_host()
+        actual = self.settings.read_text(encoding="utf-8")
+        self.assertEqual(actual, original)
+        self.assertEqual(set(json.loads(setup.jsonc_text(actual))["mcp"]), {"clickup_gpid"})
+        self.assertEqual(len(list(self.skills.glob("*/SKILL.md"))), 6)
+
+    def test_invalid_alternate_name_fails_without_any_changes(self):
+        endpoint = {"type": "remote", "url": "https://mcp.clickup.com/mcp"}
+        bad_options = (
+            {"enabled": False},
+            {"oauth": False},
+            {"headers": {"Authorization": "Bearer sensitive"}},
+            {"env": {"TOKEN": "private"}},
+            {"environment": {"TOKEN": "private"}},
+            {"auth": "bearer"},
+            {"command": ["malicious"]},
+            {"type": "local"},
+            {"type": "remote", "enabled": "true"},
+        )
+        for bad in bad_options:
+            with self.subTest(bad=list(bad)):
+                original = json.dumps({"mcp": {"alias_clickup": {**endpoint, **bad}}, "model": "private"})
+                self.settings.write_text(original, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "not a safe browser-OAuth configuration"):
+                    self.run_host()
+                self.assertEqual(self.settings.read_text(encoding="utf-8"), original)
+                self.assertFalse(self.home.exists())
+                self.assertFalse(self.skills.exists())
+
+    def test_duplicate_official_endpoints_are_rejected(self):
+        server = {"type": "remote", "url": "https://mcp.clickup.com/mcp"}
+        original = json.dumps({"mcp": {"clickup_gpid": server, "clickup_official": server}})
+        self.settings.write_text(original, encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Multiple official ClickUp MCP endpoints"):
+            self.run_host()
+        self.assertEqual(self.settings.read_text(encoding="utf-8"), original)
+        self.assertFalse(self.home.exists())
+
+    def test_disable_only_previous_installer_owned_incompatible_github(self):
+        official = {"type": "remote", "url": "https://mcp.clickup.com/mcp", "enabled": True}
+        github = {"type": "remote", "url": "https://api.githubcopilot.com/mcp/"}
+        self.settings.write_text(
+            '{ // preserve jsonc\n"mcp": {"clickup_official": ' + json.dumps(official)
+            + ', "github": ' + json.dumps(github) + '},\n"model": "my-model"\n}', encoding="utf-8")
+        receipt = self.home / "clients" / (setup.hashlib.sha256(str(self.settings.resolve()).encode()).hexdigest() + ".json")
+        setup.save_json(receipt, {"config": str(self.settings.resolve()), "servers": {"github": github}})
+        self.run_host()
+        result = self.settings.read_text(encoding="utf-8")
+        parsed = json.loads(setup.jsonc_text(result))
+        self.assertIn("// preserve jsonc", result)
+        self.assertEqual(parsed["model"], "my-model")
+        self.assertEqual(parsed["mcp"]["clickup_official"], official)
+        self.assertEqual(parsed["mcp"]["github"], {**github, "enabled": False})
+        self.assertEqual(set(parsed["mcp"]), {"clickup_official", "github"})
+        self.assertEqual(setup.read_json(receipt)["servers"]["github"]["enabled"], False)
+        self.run_host()
+        self.assertEqual(self.settings.read_text(encoding="utf-8"), result)
+
+    def test_preserve_unmanaged_incompatible_github_without_claiming_to_fix_it(self):
+        original = json.dumps({"mcp": {
+            "github": {"type": "remote", "url": "https://api.githubcopilot.com/mcp/", "enabled": True},
+            "clickup_official": {"type": "remote", "url": "https://mcp.clickup.com/mcp"},
+        }})
+        self.settings.write_text(original, encoding="utf-8")
+        self.run_host()
+        self.assertEqual(self.settings.read_text(encoding="utf-8"), original)
+
+    def test_preserve_user_modified_installer_github(self):
+        original = json.dumps({"mcp": {
+            "github": {"type": "remote", "url": "https://api.githubcopilot.com/mcp/", "enabled": True, "timeout": 42000},
+            "clickup_official": {"type": "remote", "url": "https://mcp.clickup.com/mcp"},
+        }})
+        self.settings.write_text(original, encoding="utf-8")
+        receipt = self.home / "clients" / (setup.hashlib.sha256(str(self.settings.resolve()).encode()).hexdigest() + ".json")
+        setup.save_json(receipt, {"config": str(self.settings.resolve()),
+                                  "servers": {"github": {"type": "remote", "url": "https://api.githubcopilot.com/mcp/"}}})
+        self.run_host()
+        self.assertEqual(self.settings.read_text(encoding="utf-8"), original)
+        self.assertNotIn("github", setup.read_json(receipt)["servers"])
+
     def test_unsupported_host_profile_fails_without_changes(self):
         self.args.profile = "context"
         with self.assertRaisesRegex(ValueError, "only the official"):
@@ -185,7 +268,8 @@ class HostedOAuthSetupTests(unittest.TestCase):
                             ("claude", "mcpServers"), ("copilot", "mcpServers"),
                             ("vscode", "servers")):
             config = setup.desired_host_config(client)
-            self.assertEqual(set(config[key]), {"clickup_official", "github"})
+            expected = {"clickup_official"} if client == "kilo" else {"clickup_official", "github"}
+            self.assertEqual(set(config[key]), expected)
             self.assertNotIn("clickup_work", config[key])
 
     def test_mode_defaults_oauth_and_cli_is_explicit(self):
