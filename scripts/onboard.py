@@ -1,7 +1,6 @@
-"""Interactive, per-user ClickUp/GitHub sign-in after the local installer succeeds.
+"""Finish guided onboarding: hosted OAuth in the agent OR local token-based CLI.
 
-This module never reads or logs tokens. The upstream ClickUp CLI owns its personal
-token prompt and configuration; GitHub CLI owns its browser authorization flow.
+This module does not access the hosted OAuth session or read/log ClickUp tokens.
 """
 from __future__ import annotations
 
@@ -89,21 +88,34 @@ def authenticate_github(gh_path: str | None = None, interactive: bool | None = N
     print("GitHub: authentication verified.")
 
 
-def run_onboarding(runtime: Path) -> None:
-    """Check the installed CLI, then authenticate both personal accounts."""
-    metadata_path = runtime / "runtime.json"
-    if not metadata_path.is_file():
-        raise ValueError("The installed runtime is missing. Rerun onboard.")
-    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    cup_command = metadata.get("cup_command")
-    if not isinstance(cup_command, list) or not cup_command or not all(
-        isinstance(item, str) and item for item in cup_command
-    ):
-        raise ValueError("The installed ClickUp CLI command is missing or invalid.")
-    authenticate_clickup(cup_command)
+def run_onboarding(runtime: Path | None, *, mode: str = "oauth") -> None:
+    """Finish CLI or hosted-MCP setup without exchanging credentials between them."""
+    if mode not in ("oauth", "cli"):
+        raise ValueError("Unknown onboarding mode.")
+    if mode == "cli":
+        if runtime is None:
+            raise ValueError("The full helper requires an installed runtime.")
+        metadata_path = runtime / "runtime.json"
+        if not metadata_path.is_file():
+            raise ValueError("The installed runtime is missing. Rerun onboard --mode cli.")
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        cup_command = metadata.get("cup_command")
+        if not isinstance(cup_command, list) or not cup_command or not all(
+            isinstance(item, str) and item for item in cup_command
+        ):
+            raise ValueError("The installed ClickUp CLI command is missing or invalid.")
+        authenticate_clickup(cup_command)
     authenticate_github()
-    print("\nTerminal setup complete: runtime, skills, MCP settings, and CLI sign-ins verified.")
-    print("Restart or reload your coding agent before checking skill/MCP discovery.")
-    print("The agent may request separate OAuth for the hosted GitHub MCP server.")
-    print("Ask it to verify the six skills, workflow MCP, GitHub tools and read-only permissions.")
+    if mode == "oauth":
+        print("\nTerminal setup complete: official ClickUp MCP and GitHub MCP configured, GitHub CLI authenticated.")
+        print("ClickUp OAuth is NOT authenticated or verified by this terminal command.")
+        print("Restart/reload the agent, authorize clickup_official using its browser OAuth prompt,")
+        print("and verify read-only Workspace/task access and discovered schemas.")
+        print("This mode uses agent-directed host tools, NOT the helper's durable journal or scope enforcement.")
+        print("Never route a failed or uncertain host write through the unauthenticated local helper.")
+    else:
+        print("\nTerminal setup complete: full local helper, skills, MCP configuration, and CLI sign-ins verified.")
+        print("Restart/reload your coding agent to verify actual MCP and skill discovery.")
+        print("The hosted GitHub MCP may request separate OAuth authorization.")
+        print("Local helper safeguards depend on a verified project binding.")
     print("Native ClickUp-GitHub integration and repository/Workspace access remain separate.")
