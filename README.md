@@ -5,17 +5,19 @@
 Give coding agents one project objective and ClickUp task scope, then keep their
 implementation, subtasks, progress, and GitHub PRs connected to that scope.
 
-Use the CLI when it is a good fit, a free community MCP when it saves work or
-covers a missing operation, and the official MCP when its service features fit.
-This repository supplies the shared workflow, rather than another broad API wrapper.
+**Default:** use ClickUp's official browser-OAuth MCP through your coding agent
+and authenticated `gh` for GitHub. The optional local `cu-work` helper uses
+Krodak's CLI and a separate personal-token sign-in to enforce project scope,
+record durable receipts and run a bounded sync worker. Other community MCPs are
+advanced options, not required installation steps.
 
 ## What is included
 
 | Component | Purpose |
 | --- | --- |
 | Six portable skills | Bind a project, route tools, work a task, link GitHub, resume/handoff |
-| `cu-work` CLI | Verify scope, create GitHub-associated subtasks, link issues/PRs, sync discussions, and gate completion |
-| `clickup_work` MCP | The same nine scoped workflow tools for MCP-capable agents |
+| Optional `cu-work` CLI | With `--mode cli`: enforce scope, create GitHub-associated subtasks, link issues/PRs, sync discussions, and gate completion |
+| Optional `clickup_work` MCP | With `--mode cli`: the same nine local-helper tools; hosted OAuth does not authenticate it |
 | Optional `sync-worker` | Preview or poll comments for explicit linked tasks on one authenticated machine |
 | Claude Code marketplace + portable/Codex manifests | Team installation from this repository |
 | Copilot, Kilo, VS Code, and Posit adapters | Render each client's own MCP format from the same profiles |
@@ -104,9 +106,11 @@ Claude Code:
 /plugin install clickup-skills@clickup-skills-marketplace
 ```
 
-The default plugin connects the scoped workflow MCP and GitHub's hosted MCP.
-Authorize GitHub through your client's supported authentication flow. Installing
-the plugin does not install Python/Node executables or grant workspace access.
+This **advanced marketplace path is separate from the recommended OAuth
+onboarding** and may configure the local workflow MCP and a GitHub MCP. It does
+not install or authenticate the Python/Krodak runtime. Prefer `onboard --client
+claude` for browser-OAuth-only setup; do not install duplicate skills or servers.
+Installing the marketplace plugin does not grant Workspace/repository access.
 
 Codex and OpenCode can use the same portable skills:
 
