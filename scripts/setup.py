@@ -143,10 +143,10 @@ def desired_host_config(client):
     """Agent-hosted OAuth MCP only. Do not install or authenticate cup in this mode."""
     config = read_json(ROOT / "profiles/official.json")
     config["mcpServers"].pop("clickup_work")
-    if client == "kilo":
-        # The remote GitHub MCP cannot dynamically register a Kilo OAuth client.
-        # Kilo has verified GitHub CLI access; do not install a failing remote.
-        config["mcpServers"].pop("github")
+    # Every supported client's OAuth path uses authenticated gh for GitHub.
+    # GitHub MCP is optional and client-specific. Do not create duplicate or
+    # inaccessible remote GitHub MCP servers by default.
+    config["mcpServers"].pop("github")
     text = render_config(client, config)
     return tomllib.loads(text) if client == "codex" else json.loads(text)
 
@@ -399,7 +399,7 @@ def setup_host(args, home):
         atomic_write(destination, merged)
     save_json(receipt_path, {"config": str(destination), "servers": owned, "mode": "oauth"})
     print("\nOAuth setup complete: " + ("external skills unchanged" if args.skip_skills else "six managed skills") +
-          ", official ClickUp MCP configuration" + (". GitHub uses gh in Kilo." if args.client == "kilo" else " and optional GitHub MCP configuration."))
+          ", official ClickUp MCP configuration. GitHub uses your authenticated gh CLI.")
     print("Client settings: " + str(destination))
     print("No ClickUp API token, local workflow runtime, or Krodak CLI is required by this mode.")
     key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(args.client, "mcpServers")
