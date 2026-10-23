@@ -268,8 +268,7 @@ class HostedOAuthSetupTests(unittest.TestCase):
                             ("claude", "mcpServers"), ("copilot", "mcpServers"),
                             ("vscode", "servers")):
             config = setup.desired_host_config(client)
-            expected = {"clickup_official"} if client == "kilo" else {"clickup_official", "github"}
-            self.assertEqual(set(config[key]), expected)
+            self.assertEqual(set(config[key]), {"clickup_official"})
             self.assertNotIn("clickup_work", config[key])
 
     def test_mode_defaults_oauth_and_cli_is_explicit(self):
