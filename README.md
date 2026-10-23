@@ -33,7 +33,7 @@ rate limits, plan features, and your model provider's charges still apply.
 npx --yes github:randrescastaneda/clickup-skills onboard
 ```
 
-The installer asks which coding agent to use (**Kilo Code is the default**). It installs six portable skills, configures **ClickUp's official hosted MCP + GitHub MCP**, and verifies GitHub CLI sign-in. Existing agent settings are preserved. It does **not** ask for a ClickUp personal API token or install the Krodak CLI.
+The installer asks which coding agent to use (**Kilo Code is the default**). It installs six portable skills, configures **ClickUp's official hosted MCP**, and verifies GitHub CLI sign-in. **Kilo Code uses the authenticated `gh` CLI for GitHub** rather than automatically installing the remote GitHub MCP, whose OAuth flow is incompatible with Kilo. Other supported agents may configure a GitHub MCP, subject to their own authentication. Existing agent settings are preserved. It does **not** ask for a ClickUp personal API token or install the Krodak CLI.
 
 **Then reload your coding agent and paste:**
 
