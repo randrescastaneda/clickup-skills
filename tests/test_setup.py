@@ -170,7 +170,7 @@ class HostedOAuthSetupTests(unittest.TestCase):
             self.settings.write_text(json.dumps({"mcp": {"clickup_official": {
                 "type": "remote", "url": "https://mcp.clickup.com/mcp", **extra
             }}}), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "not the expected browser-OAuth MCP"):
+            with self.assertRaisesRegex(ValueError, "not a safe browser-OAuth configuration"):
                 self.run_host()
 
     def test_valid_alternate_name_is_reused_without_creating_duplicate(self):
