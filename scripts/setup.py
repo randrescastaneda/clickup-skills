@@ -165,8 +165,20 @@ def merge_config(text, client, desired, previous):
                 if current[name] != baseline[key][name]:
                     raise ValueError("Refusing to replace an existing or locally modified MCP server: " + name)
                 changes[name] = server
+            elif name == "clickup_official" and name not in previous:
+                # Reuse a legitimate OAuth endpoint with extra client options (e.g. enabled=true).
+                # Never silently accept a same-name lookalike server, disabled OAuth or static credentials.
+                existing = current[name]
+                if (not isinstance(existing, dict)
+                    or existing.get("url") != server.get("url")
+                    or existing.get("type", server.get("type")) != server.get("type")
+                    or existing.get("enabled", True) is False
+                    or existing.get("oauth", True) is False
+                    or existing.get("headers") or existing.get("env") or existing.get("environment")):
+                    raise ValueError("Existing clickup_official is not the expected browser-OAuth MCP. Resolve it manually; configuration was preserved.")
+                continue
             elif name != "clickup_work" and name not in previous:
-                continue  # Reuse the teammate's existing GitHub/optional server.
+                continue  # Reuse an existing user-managed GitHub/optional server.
             else:
                 raise ValueError("Refusing to replace an existing or locally modified MCP server: " + name)
         else:
@@ -334,9 +346,14 @@ def setup_host(args, home):
           ", official ClickUp MCP and GitHub MCP configuration.")
     print("Client settings: " + str(destination))
     print("No ClickUp API token, local workflow runtime, or Krodak CLI is required by this mode.")
-    if "clickup_work" in owned:
+    key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(args.client, "mcpServers")
+    config = tomllib.loads(merged) if args.client == "codex" else json.loads(jsonc_text(merged))
+    aliases = [name for name, server in config[key].items() if isinstance(server, dict)
+               and server.get("url") == "https://mcp.clickup.com/mcp"]
+    print("Official ClickUp MCP server name: " + (", ".join(aliases) if aliases else "(not found; check configuration)"))
+    if "clickup_work" in config[key]:
         print("An existing local clickup_work server was preserved. It does NOT share the hosted OAuth session.")
-    print("Reload your agent and authorize clickup_official in its browser OAuth flow if prompted.")
+    print("Reload the agent; authorize the official ClickUp MCP in its browser OAuth flow if prompted.")
     print("Only the running agent can verify its hosted OAuth, tools, account, workspace and task scope.")
 
 
