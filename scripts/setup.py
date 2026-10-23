@@ -137,6 +137,14 @@ def desired_config(client, profile, runtime):
     return tomllib.loads(text) if client == "codex" else json.loads(text)
 
 
+def desired_host_config(client):
+    """Agent-hosted OAuth MCP only. Do not install or authenticate cup in this mode."""
+    config = read_json(ROOT / "profiles/official.json")
+    config["mcpServers"].pop("clickup_work")
+    text = render_config(client, config)
+    return tomllib.loads(text) if client == "codex" else json.loads(text)
+
+
 def merge_config(text, client, desired, previous):
     key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(client, "mcpServers")
     data = tomllib.loads(text) if client == "codex" else json.loads(jsonc_text(text), object_pairs_hook=unique_object)
@@ -294,6 +302,44 @@ def setup(args, home):
         print("Ask your agent to verify account access and bind the working project before task writes.")
 
 
+def setup_host(args, home):
+    """Install the agent skills and hosted OAuth MCP. Never read local CLI credentials."""
+    if args.profile not in ("default", "official"):
+        raise ValueError("OAuth onboarding supports only the official ClickUp MCP; omit --profile context.")
+    project = args.project_dir.resolve() if args.project_dir else None
+    if project and not project.is_dir():
+        raise ValueError("The project directory must already exist.")
+    destination = config_destination(args.client, project).resolve()
+    receipt_path = home / "clients" / (hashlib.sha256(str(destination).encode()).hexdigest() + ".json")
+    receipt = read_json(receipt_path, {})
+    original = destination.read_bytes() if destination.exists() else None
+    source = original.decode("utf-8") if original is not None else ("" if args.client == "codex" else "{}\n")
+    skills = skill_directory("copilot" if args.client == "vscode" else args.client, project_dir=project)
+    if not args.skip_skills:
+        install(skills, update=True, dry_run=True)
+    merged, owned = merge_config(source, args.client, desired_host_config(args.client),
+                                 receipt.get("servers", {}))
+    if (destination.read_bytes() if destination.exists() else None) != original:
+        raise ValueError("Client settings changed during OAuth setup. Rerun; settings were preserved.")
+    if not args.skip_skills:
+        install(skills, update=True)
+    if merged != source:
+        if original is not None:
+            backup = destination.with_name(destination.name + ".clickup-skills-backup-" + uuid.uuid4().hex[:12])
+            atomic_write(backup, source)
+            print("Settings backup: " + str(backup))
+        atomic_write(destination, merged)
+    save_json(receipt_path, {"config": str(destination), "servers": owned, "mode": "oauth"})
+    print("\nOAuth setup complete: " + ("external skills unchanged" if args.skip_skills else "six managed skills") +
+          ", official ClickUp MCP and GitHub MCP configuration.")
+    print("Client settings: " + str(destination))
+    print("No ClickUp API token, local workflow runtime, or Krodak CLI is required by this mode.")
+    if "clickup_work" in owned:
+        print("An existing local clickup_work server was preserved. It does NOT share the hosted OAuth session.")
+    print("Reload your agent and authorize clickup_official in its browser OAuth flow if prompted.")
+    print("Only the running agent can verify its hosted OAuth, tools, account, workspace and task scope.")
+
+
 def main():
     home = Path(os.environ.get("CLICKUP_SKILLS_HOME", Path.home() / ".local/share/clickup-skills")).expanduser().resolve()
     args = sys.argv[1:]
@@ -307,21 +353,32 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, epilog="Also: cup <arguments> or work <cu-work arguments> after setup.")
     parser.add_argument("command", choices=["setup", "update", "onboard"])
     parser.add_argument("--client", choices=CLIENTS)
+    parser.add_argument("--mode", choices=["oauth", "cli"],
+                        help="Onboarding mode: oauth (default, hosted official MCP) or cli (personal API token/full helper).")
     parser.add_argument("--skip-skills", action="store_true", help="Leave externally installed skills untouched (e.g. npx skills add)")
     parser.add_argument("--profile", choices=["default", "official", "context"], default="default")
     parser.add_argument("--project-dir", type=Path, help="Install project skills and config instead of personal settings")
     options = parser.parse_args(args)
+    if options.command != "onboard" and options.mode is not None:
+        parser.error("--mode is supported only for onboard; setup/update retain their existing CLI behavior.")
     if options.client is None:
         if options.command == "onboard":
             from onboard import choose_client
             options.client = choose_client()
         else:
             parser.error("--client is required for setup and update.")
-    setup(options, home)
     if options.command == "onboard":
         from onboard import run_onboarding
-        active = read_json(home / "installation.json", {})
-        run_onboarding(Path(active["runtime"]))
+        mode = options.mode or "oauth"
+        if mode == "oauth":
+            setup_host(options, home)
+            run_onboarding(None, mode="oauth")
+        else:
+            setup(options, home)
+            active = read_json(home / "installation.json", {})
+            run_onboarding(Path(active["runtime"]), mode="cli")
+    else:
+        setup(options, home)
 
 
 if __name__ == "__main__":
