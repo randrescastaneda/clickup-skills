@@ -88,11 +88,12 @@ def authenticate_github(gh_path: str | None = None, interactive: bool | None = N
     print("GitHub: authentication verified.")
 
 
-def run_onboarding(runtime: Path | None, *, mode: str = "oauth") -> None:
+def run_onboarding(runtime: Path | None, *, mode: str = "remote-only") -> None:
     """Finish CLI or hosted-MCP setup without exchanging credentials between them."""
-    if mode not in ("oauth", "cli"):
+    mode = {"oauth": "remote-only", "cli": "local-helper"}.get(mode, mode)
+    if mode not in ("remote-only", "local-helper"):
         raise ValueError("Unknown onboarding mode.")
-    if mode == "cli":
+    if mode == "local-helper":
         if runtime is None:
             raise ValueError("The full helper requires an installed runtime.")
         metadata_path = runtime / "runtime.json"
@@ -105,13 +106,14 @@ def run_onboarding(runtime: Path | None, *, mode: str = "oauth") -> None:
         ):
             raise ValueError("The installed ClickUp CLI command is missing or invalid.")
         authenticate_clickup(cup_command)
-    authenticate_github()
-    if mode == "oauth":
-        print("\nTerminal setup complete: official ClickUp MCP configured and GitHub CLI authenticated.")
-        print("ClickUp OAuth is NOT authenticated or verified by this terminal command. GitHub MCP is optional and client-dependent.")
+        authenticate_github()
+    if mode == "remote-only":
+        print("\nTerminal setup complete: official ClickUp MCP configured; hosted connections still need verification.")
+        print("ClickUp OAuth is NOT authenticated or verified by this terminal command. Verify an approved hosted GitHub connection when needed.")
         print("Restart/reload the agent, authorize clickup_official using its browser OAuth prompt,")
         print("and verify read-only Workspace/task access and discovered schemas.")
         print("This mode uses agent-directed host tools, NOT the helper's durable journal or scope enforcement.")
+        print("Missing or banned hosted connection: STOP. Do not install gh, cup, a helper, or mcp-remote as fallback.")
         print("Never route a failed or uncertain host write through the unauthenticated local helper.")
     else:
         print("\nTerminal setup complete: full local helper, skills, MCP configuration, and CLI sign-ins verified.")

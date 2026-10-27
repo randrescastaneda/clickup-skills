@@ -5,6 +5,13 @@ description: Link ClickUp tasks and subtasks with GitHub repos, issues, PRs, com
 
 # Connect tasks, artifacts, and discussions
 
+Choose the authorized mode first. In **remote-only** mode use only approved hosted
+ClickUp/GitHub connections, follow the [host guard protocol](../clickup-github/references/official-mcp-issue-first.md),
+and STOP if they are unavailable or organization-banned. Local commands below
+apply only to explicitly authorized **local-helper** mode. Do not install a CLI,
+helper or `npx mcp-remote` bridge as fallback. Remote safeguards are agent
+instructions, outside the helper journal, locks and completion gates.
+
 Load the binding and verify the active task's native ID, workspace, list, and ancestry. Check the exact GitHub owner/repo and base branch. Include the ClickUp task URL, `CU-TASK_ID`, and objective in issue/PR backlinks. Never use GitHub `Closes #N` for a ClickUp task number; use it only for a real GitHub issue.
 
 Before every new subtask, resolve a GitHub target in the bound repository. Prefer
@@ -20,8 +27,8 @@ Preserve body text and add reciprocal links. A repository URL has no issue/PR
 discussion surface; do not edit a repository README to add a task backlink.
 
 1. Inspect the working branch, changes, tests, and any existing PR. Create a branch/PR only when appropriate to the user's work; preserve existing branches and descriptions. Prefer the project's own branch convention, with the task ID where useful. Avoid duplicate PRs by looking up the branch first.
-2. Use `gh` for complete ordinary GitHub operations, or discover the installed GitHub MCP's repository, pull-request, file, status, and check tools. Do not assume tool namespace prefixes. Pin explicit owner/repo arguments; do not rely on a tool's current repository default.
-3. Link both directions. When `gh` and the local ClickUp runtime are available:
+2. In local-helper mode use `gh` for ordinary GitHub operations; in remote-only mode use approved hosted tools. Discover the installed GitHub MCP's repository, pull-request, file, status, and check tools. Do not assume tool namespace prefixes. Pin explicit owner/repo arguments; do not rely on a tool's current repository default.
+3. Link both directions. In authorized local-helper mode, when `gh` and the local ClickUp runtime are available:
 
    ```bash
    cu-work --project-dir /absolute/worktree link-pr --task 86native --pr 42 --key '86native:pr42:link:v1'

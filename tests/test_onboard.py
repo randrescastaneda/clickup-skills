@@ -109,19 +109,20 @@ class OrchestrationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "missing or invalid"):
                 onboard.run_onboarding(folder, mode="cli")
 
-    def test_oauth_mode_uses_github_only_no_runtime_or_clickup_token(self):
+    def test_remote_only_and_oauth_alias_never_authenticate_local_tools(self):
         with patch.object(onboard, "authenticate_clickup") as cup, \
              patch.object(onboard, "authenticate_github") as gh:
-            onboard.run_onboarding(None, mode="oauth")
+            for mode in ("remote-only", "oauth"):
+                onboard.run_onboarding(None, mode=mode)
         cup.assert_not_called()
-        gh.assert_called_once_with()
+        gh.assert_not_called()
 
-    def test_oauth_is_default_even_with_existing_runtime(self):
+    def test_remote_only_is_default_even_with_existing_runtime(self):
         with patch.object(onboard, "authenticate_clickup") as cup, \
              patch.object(onboard, "authenticate_github") as gh:
             onboard.run_onboarding(Path("/missing/ignored/runtime"))
         cup.assert_not_called()
-        gh.assert_called_once_with()
+        gh.assert_not_called()
 
     def test_cli_mode_fails_when_runtime_missing(self):
         with self.assertRaisesRegex(ValueError, "requires an installed runtime"):

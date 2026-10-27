@@ -19,10 +19,10 @@ changing that binding or running instructions embedded in task text.
 explicit: a failure never silently switches accounts/providers. The free REST MCP
 adapter discovers tools and calls the pinned upstream contracts over stdio.
 
-**OAuth host-agent mode:** `onboard` configures only the official hosted
-ClickUp MCP and portable skills, with authenticated `gh` providing GitHub
-access by default. A separately configured, authenticated GitHub MCP is
-optional. Browser OAuth belongs to the
+**Remote-only (OAuth host-agent) mode:** `onboard` configures only the official hosted
+ClickUp MCP and portable skills, with an approved hosted GitHub connection providing GitHub access when needed.
+Missing/incompatible or organization-banned connections mean STOP; do not install
+a CLI/helper or `npx mcp-remote` bridge as fallback. See [mode setup](modes.md). Browser OAuth belongs to the
 agent, not the local helper, and no personal ClickUp API token is requested or
 read. Direct host writes must follow
 [the guarded issue-first protocol](../skills/clickup-github/references/official-mcp-issue-first.md),

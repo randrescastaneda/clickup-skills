@@ -5,11 +5,33 @@ section: Start here
 ---
 # Install and connect in two actions.
 
+## Choose remote-only or local-helper first
+
+**Remote-only:** portable skills + approved official hosted ClickUp MCP OAuth,
+with an approved hosted GitHub connection where needed. No ClickUp desktop app,
+CLI/helper or `npx mcp-remote` bridge. Missing or banned connections mean STOP;
+no automatic local fallback. For compatible existing hosts, download/import the
+skill folders and use native connection settings without installing extra local
+tools. See [the manual route and host constraints](modes.html).
+
+**Local-helper:** explicitly choose `--mode local-helper` (legacy `--mode cli`)
+where local tools are allowed. Existing `setup`/`update` and `default`, `context`,
+`rest` profiles retain local compatibility. Remote-only safeguards are agent
+instructions; they do not acquire helper journal/locks/completion gates.
+
+The convenience installer below still runs Node 22+, Python 3.11+ and Git; it is
+not the no-extra-local-tools route. `--mode remote-only` is the onboarding
+default; legacy `--mode oauth` now aliases it and no longer invokes `gh auth`.
+Hosted GitHub must be verified separately. No new real-client acceptance is
+claimed; the historical Kilo pilot used local `gh` and is not complete
+remote-only acceptance.
+
+
 Choose the **coding agent you actually use**, not merely the editor where it runs. The default ClickUp authentication method is **browser-based OAuth**. Each teammate must configure their own agent environment and authorize their own accounts.
 
 ## 1. Run one command in your terminal
 
-Install [Node.js 22+](https://nodejs.org/), Python 3.11+, Git, and [GitHub CLI](https://cli.github.com/) first. The same command works in macOS Terminal and Windows PowerShell:
+Install [Node.js 22+](https://nodejs.org/), Python 3.11+, and Git first. The same command works in macOS Terminal and Windows PowerShell:
 
 ```bash
 npx --yes github:randrescastaneda/clickup-skills onboard
@@ -29,7 +51,7 @@ For every row, the full command begins with `npx --yes github:randrescastaneda/c
 
 [Detailed instructions for each agent](clients.html), including which settings file changes, OAuth steps and verification commands.
 
-**What it does:** Installs six agent skills, adds ClickUp's official remote MCP endpoint (`https://mcp.clickup.com/mcp`) to your agent configuration and checks GitHub CLI authorization. **For Kilo, GitHub uses `gh` rather than the remote GitHub MCP**, because that server's OAuth registration is incompatible with Kilo. Other clients may configure GitHub MCP separately. If you have already signed in with `gh`, that sign-in is reused; otherwise its browser login starts. Settings and existing server entries are preserved. Conflicting or locally edited skill copies are not overwritten.
+**What it does:** Installs six agent skills, adds ClickUp's official remote MCP endpoint (`https://mcp.clickup.com/mcp`) to your agent configuration and leaves hosted GitHub verification to the agent. **Kilo lacks accepted hosted GitHub OAuth for this route** because its remote OAuth registration was incompatible. Use an approved compatible hosted connection or stop GitHub-dependent work. The installer does not invoke `gh` authentication. Settings and existing server entries are preserved. Conflicting or locally edited skill copies are not overwritten.
 
 **What it does NOT do:** It does not install Krodak's CLI, access a private ClickUp token, authenticate ClickUp in the terminal, or enable the local helper's durable journal. **ClickUp OAuth happens inside your coding agent in Step 2**, not through `npx`.
 
@@ -42,14 +64,14 @@ Restart or reload the **selected coding agent** and send this instruction in its
 ```prompt
 Use the clickup-setup skill to verify my OAuth-based ClickUp Skills installation.
 Discover the six skills and the official ClickUp MCP tools. Verify GitHub
-access via gh; if a compatible GitHub MCP is installed, test it separately.
+access via an approved hosted GitHub connection; stop if unavailable.
 Guide me through the official ClickUp MCP's browser OAuth flow only if needed.
 Verify read-only access to my intended Workspace, List and task, plus my GitHub
 repository. Do not create or modify any tasks, issues or PRs.
 Report the authenticated servers, exact scope, and missing setup (if any).
 ```
 
-**Why is the second step needed?** The terminal configures the server and verifies `gh`; only your running coding agent can complete hosted ClickUp OAuth and discover the tools and permissions. The default installer **does not install GitHub MCP**, avoiding duplicate or incompatible GitHub authentication. If your agent already has a working GitHub MCP, it can use it independently; otherwise use `gh`.
+**Why is the second step needed?** The terminal configures the server; only your running coding agent can complete hosted ClickUp OAuth and discover the tools and permissions. The default installer **does not install GitHub MCP**, avoiding duplicate or incompatible GitHub authentication. Use an approved working hosted GitHub connection; if unavailable, stop without installing a fallback.
 
 For client-specific verification: **Kilo:** Kilo Settings → Agent Behaviour → MCP Servers; **Codex:** `codex mcp list` and, if needed, `codex mcp login clickup_official`; **Claude Code:** `/mcp`; **Copilot CLI:** `/mcp` or `copilot mcp list`; **VS Code Copilot Chat:** open Agent mode and check available MCP servers/tools. The ClickUp connection must perform an actual authenticated **read** before you authorize writes. See [each client's exact instructions](clients.html).
 
@@ -66,7 +88,7 @@ Your existing browser OAuth session may continue to work. The installer reuses a
 | Default OAuth mode | Full local helper mode |
 | --- | --- |
 | **No ClickUp API token.** Official ClickUp MCP authorizes in the agent's browser flow | Requires the ClickUp CLI's personal API token, unless it is already configured |
-| Six skills + hosted ClickUp MCP; GitHub uses `gh` in every agent, optional working GitHub MCP separately | Six skills + private Python workflow + Krodak CLI + local `clickup_work` MCP |
+| Six skills + hosted ClickUp MCP; GitHub uses an approved hosted connection, verified separately | Six skills + private Python workflow + Krodak CLI + local `clickup_work` MCP |
 | Agents execute operations directly, following a [guarded host issue-first protocol](clickup-github.html) | Local helper enforces project scope and records durable operation receipts when a valid binding is configured |
 | Markers and read-backs reduce duplicates; no local helper journal or cross-machine exactly-once guarantee | Helper journals and OS locks cover local writes, not other machines or direct host calls |
 

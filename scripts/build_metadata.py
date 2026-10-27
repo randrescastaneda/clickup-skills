@@ -26,19 +26,22 @@ def main():
                      "description": identity["description"]}]})
     basic = {"clickup_work": {"type": "stdio", "command": "cu-work", "args": ["mcp"]},
              "github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}
-    put(".mcp.json", {"mcpServers": basic})
-    portable = json.loads(json.dumps(basic))
-    portable["github"]["type"] = "streamable-http"
+    remote = {"clickup_official": {"type": "http", "url": "https://mcp.clickup.com/mcp"}}
+    put(".mcp.json", {"mcpServers": remote})
+    portable = json.loads(json.dumps(remote))
+    portable["clickup_official"]["type"] = "streamable-http"
     put("mcp.json", {"$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json", "mcpServers": portable})
     env = {"CLICKUP_API_KEY": "${CLICKUP_API_KEY}", "CLICKUP_TEAM_ID": "${CLICKUP_TEAM_ID}"}
     variants = {
         "default": {},
-        "official": {"clickup_official": {"type": "http", "url": "https://mcp.clickup.com/mcp"}},
         "context": {"clickup_context": {"type": "stdio", "command": "npx",
                    "args": ["-y", "@hauptsache.net/clickup-mcp@1.9.0"],
                    "env": {**env, "CLICKUP_MCP_MODE": "read-minimal"}}},
         "rest": {"clickup_rest": {"type": "stdio", "command": "clickup-rest-mcp", "env": env}},
     }
+    for name in ("official", "remote-only"):
+        put("profiles/" + name + ".json", {"mcpServers": remote})
+    put("profiles/local-helper.json", {"mcpServers": basic})
     for name, extra in variants.items():
         put("profiles/" + name + ".json", {"mcpServers": {**basic, **extra}})
 

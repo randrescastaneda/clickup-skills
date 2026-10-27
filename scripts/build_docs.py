@@ -23,6 +23,7 @@ from clickup_skills.mcp import TOOLS
 REPO = "https://github.com/randrescastaneda/clickup-skills"
 DEFAULT_URL = "https://randrescastaneda.github.io/clickup-skills/"
 SOURCES = {
+    "docs/modes.md": ("modes", "Remote-only and local-helper modes", "Reference"),
     "docs/sync-worker.md": ("sync-worker", "Optional sync worker", "Work with your agent"),
     "docs/project-decisions.md": ("project-decisions", "Project decisions", "Maintain"),
     "docs/clients.md": ("clients", "Client setup matrix", "Reference"),
@@ -34,7 +35,7 @@ SOURCES = {
 NAV = [
     ("Start here", [("index", "Overview"), ("installation", "Install for your team"), ("project-setup", "Bind your first project")]),
     ("Work with your agent", [("using-the-plugin", "Talk to your agent"), ("examples", "Usage examples"), ("synchronization", "GitHub, ClickUp & sync"), ("sync-worker", "Optional sync worker"), ("github-integration", "Native integration setup")]),
-    ("Reference", [("reference", "Skills & MCP tools"), ("clients", "Client setup matrix"), ("profiles", "Backends & profiles"), ("binding-reference", "Project binding"), ("cli", "CLI for agents"), ("contract", "Execution contract"), ("validation", "Validation & limits"), ("troubleshooting", "Troubleshooting")]),
+    ("Reference", [("modes", "Choose a mode"), ("reference", "Skills & MCP tools"), ("clients", "Client setup matrix"), ("profiles", "Backends & profiles"), ("binding-reference", "Project binding"), ("cli", "CLI for agents"), ("contract", "Execution contract"), ("validation", "Validation & limits"), ("troubleshooting", "Troubleshooting")]),
     ("Maintain", [("maintenance", "Documentation pipeline"), ("project-decisions", "Project decisions"), ("releases", "Version & releases"), ("credits", "License & attribution")]),
 ]
 
@@ -82,7 +83,7 @@ def collect_pages():
         schema = tool["inputSchema"]
         reference += [f"\n### {tool['name']}", tool["description"], "**Required:** " + ", ".join(f"`{s}`" for s in schema["required"]) + ".", '<details markdown="1"><summary>Input schema for agents</summary>\n', "```json\n" + json.dumps(schema, indent=2) + "\n```\n", "</details>"]
     pages["reference"] = {"title": "Skills & MCP tools", "section": "Reference", "description": "Generated skills, MCP tool descriptions and input schemas.", "body": "\n\n".join(reference), "source": "src/clickup_skills/mcp.py"}
-    profiles = ["# Choose the tools your agent actually needs.", "The default local runtime is `cup`. Routing recommendations do not benchmark servers, inspect the host inventory, or execute the chosen tool. Enable only the profiles you need and discover current tool schemas before using them.", "## Profiles from source", "| Profile | Named servers |", "| --- | --- |"]
+    profiles = ["# Choose the tools your agent actually needs.", "Remote-only profiles contain only hosted ClickUp. The explicit local-helper runtime is `cup`. Routing recommendations do not benchmark servers, inspect the host inventory, or execute the chosen tool. Enable only the profiles you need and discover current tool schemas before using them.", "## Profiles from source", "| Profile | Named servers |", "| --- | --- |"]
     for path in sorted((ROOT / "profiles").glob("*.json")):
         config = json.loads(path.read_text(encoding="utf-8"))
         profiles.append(f"| `{path.stem}` | " + ", ".join(f"`{n}`" for n in config["mcpServers"]) + " |")
@@ -111,14 +112,11 @@ def client_setups():
             commands = f"npx --yes github:randrescastaneda/clickup-skills onboard --client {name}"
             if name == "vscode":
                 commands += " --project-dir /absolute/path/to/project"
-            text = "OAuth-first setup: installs six skills and hosted ClickUp MCP configuration; GitHub uses gh for every agent; independently authenticated GitHub MCP remains optional. ClickUp browser authorization and tool verification happen inside the agent. Use --mode cli only for the token-backed local helper."
+            text = "OAuth-first setup: installs six skills and hosted ClickUp MCP configuration; GitHub requires a separately approved hosted connection; no local CLI authentication is invoked. ClickUp browser authorization and tool verification happen inside the agent. Use --mode local-helper (legacy --mode cli) only for the token-backed local helper."
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
-            commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile default"
-        config = json.loads((ROOT / "profiles/" / ("official.json" if automatic else "default.json")).read_text(encoding="utf-8"))
-        if automatic:
-            config["mcpServers"].pop("clickup_work")
-            config["mcpServers"].pop("github")
+            commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile remote-only"
+        config = json.loads((ROOT / "profiles/" / "remote-only.json").read_text(encoding="utf-8"))
         setups[name] = {"text": text, "commands": commands, "automatic": automatic, "config": render_config(name if name in CONFIG_CLIENTS else "portable", config), "skills": "Project skills: .github/skills/" if name == "vscode" else "Personal skill path: ~/" + SKILL_PATHS[name][0] if name in SKILL_PATHS else "No automated skill installer target for this client; confirm its supported skill discovery."}
     return setups
 

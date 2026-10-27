@@ -280,7 +280,7 @@ class HostedOAuthSetupTests(unittest.TestCase):
             setup.main()
         host.assert_called_once()
         local.assert_not_called()
-        auth.assert_called_once_with(None, mode="oauth")
+        auth.assert_called_once_with(None, mode="remote-only")
 
         with patch.object(sys, "argv", ["setup.py", "onboard", "--client", "kilo", "--mode", "cli"]), \
              patch.object(setup, "setup_host") as host, \
@@ -290,7 +290,53 @@ class HostedOAuthSetupTests(unittest.TestCase):
             setup.main()
         host.assert_not_called()
         local.assert_called_once()
-        auth.assert_called_once_with(Path("/test/runtime"), mode="cli")
+        auth.assert_called_once_with(Path("/test/runtime"), mode="local-helper")
+
+    def test_explicit_modes_and_legacy_aliases_dispatch_consistently(self):
+        import onboard
+        for mode, remote in (("remote-only", True), ("oauth", True),
+                             ("local-helper", False), ("cli", False)):
+            with self.subTest(mode=mode), \
+                 patch.object(sys, "argv", ["setup.py", "onboard", "--client", "codex", "--mode", mode]), \
+                 patch.object(setup, "setup_host") as host, \
+                 patch.object(setup, "setup") as local, \
+                 patch.object(setup, "read_json", return_value={"runtime": "/test/runtime"}), \
+                 patch.object(onboard, "run_onboarding") as auth:
+                setup.main()
+                self.assertEqual(host.call_count, int(remote))
+                self.assertEqual(local.call_count, int(not remote))
+                auth.assert_called_once_with(None if remote else Path("/test/runtime"),
+                                             mode="remote-only" if remote else "local-helper")
+
+    def test_local_official_profile_retains_helper_compatibility(self):
+        for profile in ("default", "local-helper", "official"):
+            config = setup.desired_config("codex", profile, Path("/fixture/runtime"))
+            self.assertIn("clickup_work", config["mcp_servers"])
+            self.assertIn("github", config["mcp_servers"])
+        self.args.profile = "remote-only"
+        with self.assertRaisesRegex(ValueError, "local setup was not started"), \
+             patch.object(setup, "build_runtime") as build:
+            setup.setup(self.args, self.home)
+        build.assert_not_called()
+
+    def test_remote_entrypoint_runs_without_any_local_auth_or_runtime(self):
+        # End-to-end in a fresh home; no real settings, grants, or remote calls.
+        for mode in ("remote-only", "oauth"):
+            with tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                env = {**os.environ, "HOME": folder, "USERPROFILE": folder,
+                       "CLICKUP_SKILLS_HOME": str(root / "managed"), "PATH": ""}
+                result = subprocess.run([sys.executable, "-I", str(ROOT / "scripts/setup.py"),
+                                         "onboard", "--client", "claude", "--mode", mode,
+                                         "--project-dir", folder], env=env, capture_output=True,
+                                        text=True, encoding="utf-8", check=True)
+                config = json.loads((root / ".mcp.json").read_text(encoding="utf-8"))
+                self.assertEqual(set(config["mcpServers"]), {"clickup_official"})
+                self.assertFalse((root / "managed/installation.json").exists())
+                self.assertFalse((root / "managed/releases").exists())
+                self.assertEqual(len(list(root.glob(".claude/skills/*/SKILL.md"))), 6)
+                self.assertIn("STOP", result.stdout)
+                self.assertIn("approved hosted GitHub", result.stdout)
 
 
 class PackagedInstallTests(unittest.TestCase):

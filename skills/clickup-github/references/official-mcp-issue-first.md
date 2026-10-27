@@ -1,3 +1,10 @@
+> **Remote-only boundary:** use only approved official hosted ClickUp MCP and an
+> approved hosted GitHub connection. If either required connection is unavailable,
+> incompatible or organization-banned, STOP; no CLI/helper/bridge installation or
+> fallback. These are agent-instruction safeguards, not helper-enforced journal,
+> locks or completion gates. Any `gh` examples below apply only to explicitly
+> authorized local tooling, not remote-only mode.
+
 # Official ClickUp MCP + GitHub: guarded host-agent workflow
 
 This is the **agent-executed** protocol for browser-OAuth installations. It applies

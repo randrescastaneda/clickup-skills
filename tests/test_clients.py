@@ -27,13 +27,29 @@ class ClientContracts(unittest.TestCase):
     def test_all_clients_render_all_profiles_without_reading_secret_values(self):
         with patch.dict(os.environ, {"CLICKUP_API_KEY": "do-not-export-this-secret"}):
             for client in CONFIG_CLIENTS:
-                for profile in ("default", "official", "context", "rest"):
+                for profile in ("remote-only", "local-helper", "default", "official", "context", "rest"):
                     text = render_config(client, self.profile(profile))
                     self.assertNotIn("do-not-export-this-secret", text)
                     data = tomllib.loads(text) if client == "codex" else json.loads(text)
                     key = {"codex": "mcp_servers", "vscode": "servers", "kilo": "mcp"}.get(client, "mcpServers")
-                    self.assertIn("clickup_work", data[key])
-                    self.assertIn("github", data[key])
+                    if profile in ("remote-only", "official"):
+                        self.assertEqual(set(data[key]), {"clickup_official"})
+                        self.assertNotIn("command", data[key]["clickup_official"])
+                        self.assertEqual(data[key]["clickup_official"]["url"], "https://mcp.clickup.com/mcp")
+                    else:
+                        self.assertIn("clickup_work", data[key])
+                        self.assertIn("github", data[key])
+
+    def test_root_and_plugin_defaults_resolve_only_hosted_clickup(self):
+        plugin = json.loads((ROOT / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
+        for path in (ROOT / plugin["mcpServers"], ROOT / "mcp.json"):
+            config = json.loads(path.read_text(encoding="utf-8"))["mcpServers"]
+            self.assertEqual(set(config), {"clickup_official"})
+            self.assertEqual(config["clickup_official"]["url"], "https://mcp.clickup.com/mcp")
+            self.assertNotIn("command", config["clickup_official"])
+        rendered = subprocess.check_output([sys.executable, str(ROOT / "scripts/configure.py"),
+                                            "--client", "codex"], text=True)
+        self.assertEqual(set(tomllib.loads(rendered)["mcp_servers"]), {"clickup_official"})
 
     def test_vscode_uses_servers_and_vscode_environment_references(self):
         data = json.loads(render_config("vscode", self.profile()))
@@ -52,12 +68,12 @@ class ClientContracts(unittest.TestCase):
         self.assertEqual(server["environment"]["CLICKUP_API_KEY"], "{env:CLICKUP_API_KEY}")
 
     def test_copilot_and_posit_are_distinct_from_vscode_and_kilo(self):
-        copilot = json.loads(render_config("copilot", self.profile("official")))["mcpServers"]
+        copilot = json.loads(render_config("copilot", self.profile("local-helper")))["mcpServers"]
         self.assertEqual(copilot["clickup_work"]["type"], "local")
         self.assertEqual(copilot["clickup_work"]["command"], "cu-work")
         self.assertEqual(copilot["clickup_work"]["tools"], ["*"])
         posit = json.loads(render_config("posit", self.profile("official")))["mcpServers"]
-        self.assertEqual(posit["clickup_work"]["command"], ["cu-work", "mcp"])
+        self.assertNotIn("clickup_work", posit)
         self.assertEqual(posit["clickup_official"]["auth"], "oauth")
 
     def test_input_remains_canonical_and_command_paths_are_not_shell_split(self):

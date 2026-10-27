@@ -5,6 +5,11 @@ description: Choose an efficient available CLI or free MCP for a ClickUp/GitHub 
 
 # Route each operation
 
+Choose the authorized mode first. **Remote-only** permits only approved official
+hosted ClickUp MCP and an approved hosted GitHub connection. Never install or
+fall back to `cup`, `gh`, `cu-work`, local MCPs or `npx mcp-remote` in this mode.
+If a connection is missing, incompatible or organization-banned, STOP and report
+it; do not bypass policy. See [mode setup](../clickup-setup/SKILL.md).
 Read the binding and inventory only tools actually present in this session. The backends are `cup`, `rest-mcp` (Joel Thornton), `context-mcp` (hauptsacheNet), `official` (ClickUp), `github-cli`, and `github-mcp`.
 
 | Need | First candidate | Reason |
@@ -17,8 +22,8 @@ Read the binding and inventory only tools actually present in this session. The 
 
 **Authentication-aware routing:** The table above describes a **full local-helper**
 installation with a working `cup` token. In the default **OAuth host-agent**
-installation, use the connected official ClickUp MCP for ClickUp operations
-and authenticated `gh` or GitHub MCP for GitHub; never choose `cup`,
+installation (remote-only), use the connected official ClickUp MCP for ClickUp operations
+and an approved hosted GitHub connection for GitHub; never choose `cup`,
 `rest-mcp`, or unbound `clickup_work` merely because it appears in a client
 tool list. Those are separate authentication and receipt domains. Before
 any host write, load the [guarded OAuth issue-first protocol](../clickup-github/references/official-mcp-issue-first.md).

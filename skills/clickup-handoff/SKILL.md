@@ -5,7 +5,14 @@ description: Resume a bound ClickUp project, review operation receipts, reconcil
 
 # Resume or hand off work
 
-Read `.clickup/project.json` and, when available, `cu-work context` in the target worktree. With host MCPs only, read the binding and preserve separate host operation evidence; do not assume a helper journal exists. Confirm the project, objective, active task, branch, and repository before resuming. Explicit `--task` is safer than changing shared focus when agents work in parallel.
+Choose the authorized mode first. In **remote-only** mode use only approved hosted
+ClickUp/GitHub connections, follow the [host guard protocol](../clickup-github/references/official-mcp-issue-first.md),
+and STOP if they are unavailable or organization-banned. Local commands below
+apply only to explicitly authorized **local-helper** mode. Do not install a CLI,
+helper or `npx mcp-remote` bridge as fallback. Remote safeguards are agent
+instructions, outside the helper journal, locks and completion gates.
+
+Read `.clickup/project.json` and, only in local-helper mode when available, `cu-work context` in the target worktree. With host MCPs only, read the binding and preserve separate host operation evidence; do not assume a helper journal exists. Confirm the project, objective, active task, branch, and repository before resuming. Explicit `--task` is safer than changing shared focus when agents work in parallel.
 
 Read the actual task and relevant comments plus current GitHub issue/PR/check state. Verify its remote GitHub association markers. Run `sync-comments --task ID` / `sync_task_comments` for issue/PR discussions when authorized, observing the pagination/echo rules in `clickup-github`. Local focus and receipts are not authoritative remote state. Inspect pending operations in the reported `local_state` file. Do not print task bodies, credentials, or the entire state file into unrelated logs.
 

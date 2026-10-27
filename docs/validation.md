@@ -1,5 +1,20 @@
 # Validation and rollout
 
+## Remote-only mode alignment — 27 October 2026
+
+The [mode guide](modes.md) describes current generated manifests, profiles and
+onboarding. Tests use isolated homes/projects and mocked service fixtures. They
+check that remote-only/default/legacy-oauth onboarding never authenticates local
+ClickUp or GitHub CLIs, while local-helper/legacy-cli retains its runtime.
+Generated configuration and JSON/TOML contracts are not installed-client or OAuth
+acceptance. No real client installation, new OAuth authorization, live ClickUp
+mutation or organizational policy change was exercised in this implementation.
+The historical Kilo pilot used `gh` and does not prove end-to-end remote-only
+GitHub support. #9–#12 retain live acceptance/safety work; #13 retains journal
+parity feasibility. PR #6's separate worker write-budget defect remains tracked
+under #12/#23 and is not repaired here.
+
+
 ## Automated coverage
 
 `python3 scripts/check.py` runs offline behavioral tests, bytecode compilation,
