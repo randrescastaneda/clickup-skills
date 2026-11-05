@@ -5,12 +5,16 @@ description: Link ClickUp tasks and subtasks with GitHub repos, issues, PRs, com
 
 # Connect tasks, artifacts, and discussions
 
-Choose the authorized mode first. In **remote-only** mode use only approved hosted
-ClickUp/GitHub connections, follow the [host guard protocol](../clickup-github/references/official-mcp-issue-first.md),
-and STOP if they are unavailable or organization-banned. Local commands below
-apply only to explicitly authorized **local-helper** mode. Do not install a CLI,
-helper or `npx mcp-remote` bridge as fallback. Remote safeguards are agent
-instructions, outside the helper journal, locks and completion gates.
+Choose ClickUp and GitHub backends independently. **Hosted ClickUp** uses official
+OAuth MCP; direct GitHub actions use the selected backend (`gh` by default or an
+explicitly selected approved hosted GitHub connection). Reuse account sign-in
+across authorized repositories and verify each project target; no per-repository
+token is required for `gh`. Strict **remote-only** permits hosted connections
+only and forbids `gh`. Missing or banned selected tools mean STOP, not fallback.
+Never use `cup`, `cu-work` or a bridge for hosted ClickUp. Follow the
+[host guard protocol](../clickup-github/references/official-mcp-issue-first.md)
+before hosted writes; these are agent checks outside helper receipts/locks/gates.
+Local ClickUp helper commands below apply only in explicit **local-helper** mode.
 
 Load the binding and verify the active task's native ID, workspace, list, and ancestry. Check the exact GitHub owner/repo and base branch. Include the ClickUp task URL, `CU-TASK_ID`, and objective in issue/PR backlinks. Never use GitHub `Closes #N` for a ClickUp task number; use it only for a real GitHub issue.
 
@@ -21,14 +25,14 @@ an explicit repository URL for repository-level planning. `cu-work subtask` /
 `--github-target URL` / `github_target` to reuse a repo/issue/PR. If the target
 write fails or is uncertain, do not create an unlinked child.
 
-For existing tasks, use `link-github --target URL --task ID --key KEY` /
+Only in local-helper mode, for existing tasks use `link-github --target URL --task ID --key KEY` /
 `link_github_target`. `--target new-issue --title '...'` creates/reuses an issue.
 Preserve body text and add reciprocal links. A repository URL has no issue/PR
 discussion surface; do not edit a repository README to add a task backlink.
 
 1. Inspect the working branch, changes, tests, and any existing PR. Create a branch/PR only when appropriate to the user's work; preserve existing branches and descriptions. Prefer the project's own branch convention, with the task ID where useful. Avoid duplicate PRs by looking up the branch first.
-2. In local-helper mode use `gh` for ordinary GitHub operations; in remote-only mode use approved hosted tools. Discover the installed GitHub MCP's repository, pull-request, file, status, and check tools. Do not assume tool namespace prefixes. Pin explicit owner/repo arguments; do not rely on a tool's current repository default.
-3. Link both directions. In authorized local-helper mode, when `gh` and the local ClickUp runtime are available:
+2. For direct GitHub operations use the selected backend: `gh` by default in hosted ClickUp/local-helper modes; approved hosted tools when selected. Strict remote-only never uses `gh`. Discover the installed GitHub MCP's repository, pull-request, file, status, and check tools. Do not assume tool namespace prefixes. Pin explicit owner/repo arguments; do not rely on a tool's current repository default.
+3. Prefer an already configured native ClickUp–GitHub integration for automatic activity links; verify its actual coverage. Native UI commands/automations do not automatically become ClickUp MCP tools or mirror all comments. Choose one issue-creation/mirroring owner to avoid duplicate writes. Agent-driven creation, issue-body edits and CI checks still use the selected GitHub backend. Link both directions. In authorized local-helper mode, when `gh` and the local ClickUp runtime are available:
 
    ```bash
    cu-work --project-dir /absolute/worktree link-pr --task 86native --pr 42 --key '86native:pr42:link:v1'
@@ -52,8 +56,10 @@ discussion surface; do not edit a repository README to add a task backlink.
 
 For host MCP completion, enforce the same evidence gate manually before calling the ClickUp status tool. Preserve the exact PR URL, head SHA, test results, and acceptance evidence in the task update. If any check is unavailable, report the gap and leave the task open.
 
-Run `sync-comments --task ID` / `sync_task_comments` at session start and handoff
-when an issue/PR is associated. Progress posts already mirror to associated
+In local-helper mode run `sync-comments --task ID` / `sync_task_comments` at session start and handoff
+when an issue/PR is associated. With hosted ClickUp, use the selected service
+tools and the synchronization reference; do not call the helper for those host
+operations. Local-helper progress posts already mirror to associated
 discussions. Reconciliation copies source-linked snapshots of GitHub issue/PR
 discussion, reviews, and inline comments to ClickUp and top-level ClickUp
 comments to GitHub. Skip generated `cu-work`/`cu-work-sync` mirrors; never

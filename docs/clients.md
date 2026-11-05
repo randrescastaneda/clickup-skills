@@ -1,32 +1,20 @@
 # Set up your coding agent
 
-## Choose remote-only or local-helper first
+## Choose ClickUp and GitHub independently
 
-**Remote-only:** portable skills + approved official hosted ClickUp MCP OAuth,
-with an approved hosted GitHub connection where needed. No ClickUp desktop app,
-CLI/helper or `npx mcp-remote` bridge. Missing or banned connections mean STOP;
-no automatic local fallback. For compatible existing hosts, download/import the
-skill folders and use native connection settings without installing extra local
-tools. See [the manual route and host constraints](modes.md).
+**Default: hosted ClickUp + GitHub CLI.** Use official ClickUp MCP with browser-based OAuth and reuse `gh` sign-in across authorized GitHub repositories. No ClickUp desktop app, ClickUp CLI, personal ClickUp token, local helper or bridge is required. The installer checks GitHub sign-in; only the running agent can verify ClickUp OAuth and actual repository access.
 
-**Local-helper:** explicitly choose `--mode local-helper` (legacy `--mode cli`)
-where local tools are allowed. Existing `setup`/`update` and `default`, `context`,
-`rest` profiles retain local compatibility. Remote-only safeguards are agent
-instructions; they do not acquire helper journal/locks/completion gates.
+Use `onboard --mode hosted --github cli` explicitly for this combination. `--mode hosted --github hosted` instead selects an existing approved hosted GitHub connection. **Strict remote-only** (`--mode remote-only`, legacy `--mode oauth`) requires both connections to be hosted and never invokes `gh`. Missing or banned selected backends mean STOP; do not automatically fall back.
 
-The convenience installer below still runs Node 22+, Python 3.11+ and Git; it is
-not the no-extra-local-tools route. `--mode remote-only` is the onboarding
-default; legacy `--mode oauth` now aliases it and no longer invokes `gh auth`.
-Hosted GitHub must be verified separately. No new real-client acceptance is
-claimed; the historical Kilo pilot used local `gh` and is not complete
-remote-only acceptance.
+**Local-helper** (`--mode local-helper`, legacy `--mode cli`) separately installs `cup`/`cu-work` and requires its own ClickUp token. Existing `setup`/`update` keep their local-helper semantics. Hosted operations use agent-instruction safeguards, outside helper receipts, locks and completion gates.
 
+The convenience installer runs Node 22+, Python 3.11+ and Git; the default also needs an already allowed GitHub CLI. The strict manual route can use existing hosts with no extra local tools. See [modes and host constraints](modes.md).
 
 **Choose the agent, not the editor.** For example, use the **Kilo** instructions when Kilo runs inside VS Code or Positron; use **Codex** when you run Codex there. These instructions are for local agents, not Copilot's GitHub-hosted cloud agent.
 
 ## The same two actions for everyone
 
-**Prerequisites:** Your coding agent, Node.js 22+, Python 3.11+, and Git must be installed in the environment where the agent runs. The team must already have granted you access to its ClickUp Workspace and GitHub repository.
+**Prerequisites:** Your coding agent, Node.js 22+, Python 3.11+, Git, and GitHub CLI (`gh`, for the default GitHub backend) must be installed in the environment where the agent runs. The team must already have granted you access to its ClickUp Workspace and GitHub repository.
 
 **Action 1 — Terminal.** Run the following from any directory in macOS Terminal or Windows PowerShell:
 
@@ -34,7 +22,7 @@ remote-only acceptance.
 npx --yes github:randrescastaneda/clickup-skills onboard
 ```
 
-Choose your agent when prompted; **press Enter for Kilo Code**. Or use one of the client-specific commands below to skip the chooser. This installs six workflow skills and the **official hosted ClickUp MCP**, reuses safe existing settings, and leaves hosted GitHub connection verification to the agent. It does **not** generate or request a ClickUp personal API token. The GitHub MCP is **not** installed by default: verify an approved hosted GitHub connection separately. A separate GitHub MCP may already be built into your client or installed independently.
+Choose your agent when prompted; **press Enter for Kilo Code**. Or use one of the client-specific commands below to skip the chooser. This installs six workflow skills and the **official hosted ClickUp MCP**, reuses safe existing settings, and verifies/reuses GitHub CLI browser sign-in by default. It does **not** generate or request a ClickUp personal API token. The installer does not install GitHub MCP. To reuse an approved hosted connection instead of `gh`, append `--mode hosted --github hosted`; the agent then verifies that connection. A missing backend never triggers an automatic switch.
 
 **Action 2 — Your coding agent.** Reload the agent and paste:
 
@@ -42,11 +30,11 @@ Choose your agent when prompted; **press Enter for Kilo Code**. Or use one of th
 Use clickup-setup to verify this ClickUp Skills installation. Discover all six
 skills and the official ClickUp MCP. Connect it using the coding agent's browser
 OAuth flow if needed. Verify read-only access to my ClickUp Workspace, List
-and task, and to the intended GitHub repository using an approved hosted GitHub tool. Distinguish OAuth from local clickup_work authentication.
+and task, and to the intended GitHub repository using gh (or the explicitly selected hosted GitHub tool). Distinguish OAuth from local clickup_work authentication.
 Report what passed and exactly what still needs me. Do not modify anything.
 ```
 
-Only the **agent** can authorize and test ClickUp MCP OAuth. The terminal verifies neither hosted GitHub nor the ClickUp browser session. Do not authorize writes solely because the MCP server appears as `connected`.
+Only the **agent** can authorize and test ClickUp MCP OAuth. The terminal checks `gh` sign-in only when GitHub CLI is selected; it verifies neither hosted GitHub nor the ClickUp browser session. Do not authorize writes solely because the MCP server appears as `connected`.
 
 ## Client-by-client instructions
 
@@ -58,7 +46,8 @@ npx --yes github:randrescastaneda/clickup-skills onboard --client kilo
 
 - **Installed configuration:** `~/.config/kilo/kilo.jsonc` (`XDG_CONFIG_HOME` is respected). User skills go in `~/.kilo/skills/`.
 - **Next:** Restart/reload Kilo. In the extension, open **Kilo Settings → Agent Behaviour → MCP Servers** (or the MCP settings panel) and check the `clickup_official` server. If it needs authorization, use the browser sign-in prompt. If the server already uses a different valid name, verify that name rather than adding a duplicate.
-- **GitHub:** The historical Kilo pilot used local `gh`; remote-only requires a separate approved hosted GitHub connection. The GitHub remote MCP does **not** support Kilo's dynamic OAuth client registration. An unchanged legacy GitHub entry installed by this project is disabled; user-edited entries are preserved and may need manual review.
+- **GitHub:** Default to the existing `gh` browser login. No manual repository-specific token or hosted GitHub MCP is required for this backend. Strict remote-only still needs an approved hosted connection; the earlier GitHub OAuth DCR attempt failed. An unchanged legacy installer-owned GitHub entry is disabled; user-edited entries remain preserved.
+- **Skill reload:** On Kilo VS Code extension 7.8.18, the local report found full skill contents cached in the shared backend. After updating, use **Developer: Reload Window**, start a fresh task, and compare loader output with installed files. A new task alone did not reliably refresh the old backend.
 - **Acceptance status:** This client has been tested with the official ClickUp OAuth flow and a bounded GitHub-linked task pilot. A future ClickUp write still needs explicit scope/approval.
 
 [Official Kilo MCP instructions](https://kilo.ai/docs/automate/mcp/using-in-kilo-code).
@@ -71,7 +60,7 @@ npx --yes github:randrescastaneda/clickup-skills onboard --client codex
 
 - **Installed configuration:** `~/.codex/config.toml` (`CODEX_HOME` is respected); user skills go in `~/.agents/skills/`. Codex CLI and its editor extension share the MCP configuration.
 - **Next:** Run `codex mcp list` to confirm `clickup_official`. If it requires OAuth, run `codex mcp login clickup_official` and complete the browser flow. In the Codex terminal UI, `/mcp` shows active servers.
-- **GitHub:** Verify an approved hosted GitHub connection with actual repository reads; do not install `gh` as remote-only fallback.
+- **GitHub:** Default to verified `gh` sign-in and actual repository reads. Use `--github hosted` to select an approved hosted connection; do not switch after an uncertain write. Strict remote-only forbids `gh`.
 
 [Codex MCP documentation](https://developers.openai.com/codex/mcp). A generated configuration is **not** proof that this user's Codex session has connected.
 
@@ -83,7 +72,7 @@ npx --yes github:randrescastaneda/clickup-skills onboard --client claude
 
 - **Installed configuration:** `~/.claude.json`; user skills go in `~/.claude/skills/`.
 - **Next:** Restart Claude Code. Use `claude mcp list` in your terminal or `/mcp` within Claude Code. Follow its browser OAuth authorization if `clickup_official` says it needs sign-in.
-- **GitHub:** Verify an approved hosted GitHub connection and repository permissions; its authorization is independent.
+- **GitHub:** Reuse `gh` sign-in by default. An explicitly selected hosted GitHub connection has independent authorization and must pass repository reads.
 - **Avoid duplicate installs:** The older Claude marketplace plugin is a separate installation route. Do **not** install both its skill/MCP copies and this installer into the same destinations.
 
 [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp). Do not treat the editor's own chat or Claude Desktop settings as the Claude Code CLI settings.
@@ -96,7 +85,7 @@ npx --yes github:randrescastaneda/clickup-skills onboard --client copilot
 
 - **Installed configuration:** `~/.copilot/mcp-config.json`; user skills go in `~/.copilot/skills/`.
 - **Next:** Run `copilot mcp list` or open `/mcp` in the Copilot CLI. Inspect `clickup_official` and follow any supported sign-in flow. Confirm an **authenticated ClickUp read** before performing any task work. If your Copilot CLI cannot complete OAuth, **stop** and report it; don't substitute an unverified token.
-- **GitHub:** Copilot CLI includes its own GitHub MCP; verify it is an approved hosted connection with the needed tools. The installer does not check `gh` sign-in. Avoid installing an additional duplicate GitHub server.
+- **GitHub:** Default onboarding checks `gh`. To use Copilot CLI's existing GitHub MCP instead, select `--github hosted` and verify its required tools and repository access. Avoid adding a duplicate server.
 
 [Copilot CLI MCP documentation](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers). **This target is the Copilot CLI, not VS Code Copilot Chat or Copilot's cloud agent.**
 
@@ -109,14 +98,14 @@ npx --yes github:randrescastaneda/clickup-skills onboard --client vscode --proje
 Replace the path with your **existing working repository** (quote it if it contains spaces). This is the only automatically supported VS Code MCP target; it does not configure a separate Copilot CLI session.
 
 - **Installed configuration:** `.vscode/mcp.json` (top-level `servers`) and skills in `.github/skills/` in that project.
-- **Next:** Open that folder in VS Code, approve Workspace Trust if requested, open Copilot Chat in **Agent mode**, and enable/authorize `clickup_official` in the available MCP server/tools controls. Check a read-only task call and approved hosted GitHub repository access.
+- **Next:** Open that folder in VS Code, approve Workspace Trust if requested, open Copilot Chat in **Agent mode**, and enable/authorize `clickup_official` in the available MCP server/tools controls. Check a read-only task call and repository access with the selected GitHub backend (`gh` by default).
 - **Other agents in VS Code:** If you use the Kilo extension, Codex extension, or Claude Code there, select `--client kilo`, `--client codex`, or `--client claude` instead.
 
 [VS Code MCP instructions](https://code.visualstudio.com/docs/agent-customization/mcp-servers). Do not assume `.vscode/mcp.json` is loaded by Copilot CLI.
 
 ### OpenCode and Posit Assistant — advanced/manual, not part of automatic onboarding
 
-**OpenCode:** The repository provides portable skills and a generic MCP renderer, **not** a verified one-command OpenCode adapter. Use the [advanced manual repository instructions](https://github.com/randrescastaneda/clickup-skills#advanced-manual-installation--contributing); verify OpenCode's current skill directories, native MCP schema, browser OAuth, and approved hosted GitHub access before relying on it. Do not paste another client's configuration into OpenCode.
+**OpenCode:** The repository provides portable skills and a generic MCP renderer, **not** a verified one-command OpenCode adapter. Use the [advanced manual repository instructions](https://github.com/randrescastaneda/clickup-skills#advanced-manual-installation--contributing); verify OpenCode's current skill directories, native MCP schema, browser OAuth, and the explicitly selected GitHub backend before relying on it. Do not paste another client's configuration into OpenCode.
 
 **Posit Assistant in Positron:** This is different from Kilo/Claude/Codex *running inside Positron*. Posit Assistant supports global `~/.posit/assistant/settings.json` and project `.posit/assistant/settings.json` with a top-level `mcpServers` object. For the official ClickUp endpoint, configure a remote server with `url: https://mcp.clickup.com/mcp` and `auth: "oauth"`; in Assistant run `/mcp` and select **Sign in**. The repository has an advanced `python3 scripts/configure.py --client posit --profile official` renderer, but no fully tested automatic skills installer for Posit Assistant. Verify tool discovery, skill loading and permissions manually before writes.
 
@@ -155,7 +144,7 @@ For Vercel-managed full-helper mode add `--mode cli` to the second command. Use 
 | `gh` CLI (local-helper only) | Signs into GitHub in the current terminal environment; verify intended repository **write permission** separately |
 | Native ClickUp–GitHub integration | Separate Workspace/repository administrator authorization; installing these skills does not enable it |
 
-Settings are merged conservatively with private backups. Invalid/duplicate OAuth aliases or locally modified skill files stop installation. Unchanged previously installer-managed **Kilo** GitHub remote entries are disabled because their OAuth server cannot dynamically register Kilo; user-edited GitHub entries are preserved. In all clients, a previously configured GitHub MCP can remain present, and must be verified as an approved hosted connection before remote-only GitHub-dependent workflows.
+Settings are merged conservatively with private backups. Invalid/duplicate OAuth aliases or locally modified skill files stop installation. When GitHub CLI is selected, an unchanged previously installer-managed **Kilo** GitHub remote entry is disabled; user-edited entries are preserved. When hosted GitHub is selected, the existing remote entry is preserved even if installer-owned; verify its actual authentication rather than inferring failure from the earlier DCR attempt. A configured GitHub MCP is irrelevant to the default `gh` backend.
 
 For a working task, the agent must establish exact Workspace, home List, root ancestry and GitHub owner/repo **before any writes**, and use the [guarded official-MCP protocol](../skills/clickup-github/references/official-mcp-issue-first.md). **No automatic background work or native synchronization** is installed.
 

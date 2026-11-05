@@ -117,12 +117,30 @@ class OrchestrationTests(unittest.TestCase):
         cup.assert_not_called()
         gh.assert_not_called()
 
-    def test_remote_only_is_default_even_with_existing_runtime(self):
+    def test_hosted_default_authenticates_only_github_even_with_existing_runtime(self):
         with patch.object(onboard, "authenticate_clickup") as cup, \
              patch.object(onboard, "authenticate_github") as gh:
             onboard.run_onboarding(Path("/missing/ignored/runtime"))
         cup.assert_not_called()
+        gh.assert_called_once_with()
+
+    def test_hosted_github_selection_never_authenticates_either_cli(self):
+        with patch.object(onboard, "authenticate_clickup") as cup, \
+             patch.object(onboard, "authenticate_github") as gh:
+            onboard.run_onboarding(None, mode="hosted", github="hosted")
+        cup.assert_not_called()
         gh.assert_not_called()
+
+    def test_contradictory_backends_fail_before_authentication(self):
+        for mode, github in (("remote-only", "cli"), ("oauth", "cli"),
+                             ("local-helper", "hosted"), ("hosted", "unknown")):
+            with self.subTest(mode=mode, github=github), \
+                 patch.object(onboard, "authenticate_clickup") as cup, \
+                 patch.object(onboard, "authenticate_github") as gh:
+                with self.assertRaises(ValueError):
+                    onboard.run_onboarding(None, mode=mode, github=github)
+                cup.assert_not_called()
+                gh.assert_not_called()
 
     def test_cli_mode_fails_when_runtime_missing(self):
         with self.assertRaisesRegex(ValueError, "requires an installed runtime"):

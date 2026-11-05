@@ -23,7 +23,7 @@ from clickup_skills.mcp import TOOLS
 REPO = "https://github.com/randrescastaneda/clickup-skills"
 DEFAULT_URL = "https://randrescastaneda.github.io/clickup-skills/"
 SOURCES = {
-    "docs/modes.md": ("modes", "Remote-only and local-helper modes", "Reference"),
+    "docs/modes.md": ("modes", "ClickUp and GitHub connection modes", "Reference"),
     "docs/sync-worker.md": ("sync-worker", "Optional sync worker", "Work with your agent"),
     "docs/project-decisions.md": ("project-decisions", "Project decisions", "Maintain"),
     "docs/clients.md": ("clients", "Client setup matrix", "Reference"),
@@ -112,7 +112,7 @@ def client_setups():
             commands = f"npx --yes github:randrescastaneda/clickup-skills onboard --client {name}"
             if name == "vscode":
                 commands += " --project-dir /absolute/path/to/project"
-            text = "OAuth-first setup: installs six skills and hosted ClickUp MCP configuration; GitHub requires a separately approved hosted connection; no local CLI authentication is invoked. ClickUp browser authorization and tool verification happen inside the agent. Use --mode local-helper (legacy --mode cli) only for the token-backed local helper."
+            text = "OAuth-first setup: installs six skills and hosted ClickUp MCP configuration; GitHub uses reusable gh sign-in by default; --github hosted selects an existing approved hosted connection and --mode remote-only forbids local CLI authentication. ClickUp browser authorization and tool verification happen inside the agent. Use --mode local-helper (legacy --mode cli) only for the token-backed local helper."
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
             commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile remote-only"

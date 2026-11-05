@@ -1,42 +1,84 @@
 ---
 name: clickup-setup
-description: Install, authenticate, validate, or update ClickUp Skills in explicit remote-only or local-helper mode. Use for team onboarding, safe MCP configuration, choosing an authorized mode, or diagnosing setup.
+description: Install, authenticate, validate, or update ClickUp Skills. Choose hosted ClickUp with independent GitHub CLI or hosted access, strict remote-only, or the optional local helper. Use for onboarding, safe configuration and diagnosing setup.
 ---
 
 # Guided ClickUp Skills setup
 
-Choose the authorized mode before changing configuration. Respect organizational service bans and preserve existing settings, customized skills and sessions. Never request tokens in chat. A hosted MCP connection is distinct from the ClickUp desktop app, local CLI and REST API credentials.
+Select ClickUp and GitHub backends independently. Preserve existing settings,
+customized skills and sessions. Keep credentials outside chat and Git. Native
+ClickUp–GitHub integration is separate from the coding agent's GitHub access.
 
-## Remote-only (default)
-
-Use portable skills with approved official hosted ClickUp MCP at `https://mcp.clickup.com/mcp` and an approved hosted GitHub connection when the workflow needs GitHub. No ClickUp desktop app, `cup`, `cu-work`, local CLI/helper or `npx mcp-remote` bridge is required or permitted as automatic fallback. If a required approved connection or direct remote OAuth support is absent, **STOP and report it**; do not install tools or bypass policy.
-
-For **no extra local tools**, use a browser/admin-provided reviewed repository copy and copy/import the six `skills/` directories and references into the existing host's supported skill location. Preserve MIT notices. Add/reuse the official ClickUp connection through the host's native direct HTTP/OAuth UI, plus an approved hosted GitHub connection. Verify the host supports both portable skills and these remote connections. See [modes and host constraints](https://github.com/randrescastaneda/clickup-skills/blob/main/docs/modes.md); there is no universal manifest format.
-
-If local Node.js 22+, Python 3.11+ and Git are already allowed, this optional convenience command copies skills and configures the endpoint:
+## Hosted ClickUp + GitHub CLI (default)
 
 ```bash
-npx --yes github:randrescastaneda/clickup-skills onboard --mode remote-only --client kilo
+npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --mode hosted --github cli
 ```
 
-Omit `--client` for the chooser. `--mode oauth` is a legacy alias; it no longer invokes `gh auth`. This command is **not** a no-install route: it executes local installer code. It never proves OAuth, task permission or hosted GitHub access. `--skip-skills` preserves skills owned by Vercel/another installer. Do not use two installers for the same copies.
+The convenience installer requires Node 22+, Python 3.11+, Git and an already
+allowed GitHub CLI. It copies six skills and configures official hosted ClickUp
+MCP at `https://mcp.clickup.com/mcp`. It never installs/authenticates `cup`,
+`cu-work`, a ClickUp app or a bridge, and never requests a ClickUp token.
+It checks existing `gh` sign-in and offers GitHub's browser login when needed.
+Reuse that account across authorized repositories; verify each exact target.
+Do not create a GitHub token for each repository. If `gh` is missing, report
+the prerequisite; do not silently install it or change the selected backend.
 
-After reload, discover all six skills and real MCP schemas. Authorize official ClickUp OAuth only in the host, then verify authenticated identity, Workspace/List/root ancestry and intended GitHub repository via approved hosted reads. A connected server alone is insufficient. Codex uses `codex mcp list` / `codex mcp login clickup_official`; Claude Code uses `/mcp`; Copilot CLI uses `/mcp`; VS Code needs a trusted project and Agent mode. These existing-host commands do not install a bridge.
+Omitting mode/backend flags selects this combination. Rerun the same command to
+update it. `setup`/`update` still select the separate local ClickUp helper.
+Use `--skip-skills` when another installer such as Vercel owns those copies.
 
-Kilo's prior macOS ClickUp pilot used local `gh` for GitHub. GitHub remote OAuth DCR was incompatible; this is **not** full remote-only acceptance. Without another approved working hosted GitHub connection, stop GitHub-dependent work. See [per-agent details](https://github.com/randrescastaneda/clickup-skills/blob/main/docs/clients.md).
+After updating Kilo VS Code, use **Developer: Reload Window** and a fresh task.
+Compare skill-loader bodies with installed files: the observed 7.8.18 backend
+cached old bodies despite a new task. Do not delete caches/copies speculatively.
+
+Only the running agent can verify ClickUp OAuth. Discover the six skills and real
+MCP schemas, then read authenticated Workspace/List/root ancestry and GitHub
+repository identity. A connected/configured server alone is insufficient.
+
+## Hosted GitHub or strict remote-only
+
+```bash
+npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --mode hosted --github hosted
+# Strict no-local-service-tools variant; legacy --mode oauth is its alias:
+npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --mode remote-only
+```
+
+These variants never invoke `gh` authentication. Verify an approved existing
+hosted GitHub connection with actual repository/issue/PR/check tools. Kilo's
+earlier GitHub OAuth DCR attempt failed; this does not establish incompatibility
+with every supported authentication method. Do not create credentials/apps or
+broaden organization access without explicit authorization.
+
+For no extra local tools, import the six skill directories and references from a
+reviewed repository copy into an existing compatible host. Preserve MIT notices
+and configure direct ClickUp HTTP/OAuth and approved hosted GitHub in that host.
+There is no universal manifest/import format. `npx mcp-remote` is a local bridge.
+Missing/banned selected connections mean STOP; strict remote-only forbids `gh`.
 
 ## Local-helper (explicit)
 
 ```bash
-npx --yes github:randrescastaneda/clickup-skills onboard --mode local-helper --client kilo
+npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --mode local-helper
 ```
 
-Legacy `--mode cli` and software-only `setup` / `update` remain supported. This installs the private Python runtime, Krodak's latest CLI and `clickup_work`, with `gh` for GitHub. Separate personal ClickUp CLI token authentication uses `cup init` / `cup auth`; tokens belong in the terminal's credential flow, never chat or committed config. Hosted OAuth does not authenticate `cup`.
+Legacy `--mode cli` and software-only `setup`/`update` remain supported. They
+install the private Python runtime, Krodak CLI and `clickup_work`, using `gh`
+for GitHub. ClickUp CLI token authentication is separate from hosted OAuth.
+Helper receipts, OS locks and completion checks require a valid project binding;
+they do not protect direct hosted calls. Do not use preserved local helpers as
+a hosted ClickUp fallback or replay an uncertain write through another backend.
 
-Use local tools only where user and organization allow them. The helper's scope/journal/OS locks and completion checks require a verified project binding; running the process alone proves none of that. Existing local configuration is preserved by remote-only setup but must not be used for remote-only operations. Do not change mode to replay a failed or uncertain write.
+## Native integration and first writes
 
-## Before the first write
+Prefer configured native ClickUp–GitHub activity linking and approved automations
+for their actual coverage. They do not automatically expose GitHub operations to
+Kilo through ClickUp MCP, or synchronize every comment. Use the selected GitHub
+backend for direct issue/PR edits, code review and CI verification. Establish one
+owner for issue creation/comment mirroring to avoid duplicates.
 
-Load the [guarded issue-first host protocol](../clickup-github/references/official-mcp-issue-first.md). Verify exact GitHub repository/base and target **before** child creation, live ClickUp identity/Workspace/List/root ancestry, duplicate markers, bounded writes, readback and uncertain-outcome handling. In remote-only these are **agent-instruction safeguards**, not helper-enforced journal, locks or completion gates. No safety-parity claim is made. If scope or evidence is missing, stop before writing.
-
-Do not update tools during task writes. After an authorized update, reload and reverify discovery and scope. No credentials, grants or global settings changes are implied merely by a task mentioning ClickUp. Native integrations, automations and recurring workers are separate administrator work.
+Load the [guarded issue-first host protocol](../clickup-github/references/official-mcp-issue-first.md)
+before any hosted write. Verify exact scope, GitHub target, complete duplicates,
+bounded writes, readback and uncertain outcomes. These are agent safeguards,
+outside helper journals/locks/gates. Do not update tools during task writes.
+Native connections, automations and permanent workers require separate setup.

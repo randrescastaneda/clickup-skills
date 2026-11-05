@@ -1,9 +1,9 @@
-> **Remote-only boundary:** use only approved official hosted ClickUp MCP and an
-> approved hosted GitHub connection. If either required connection is unavailable,
-> incompatible or organization-banned, STOP; no CLI/helper/bridge installation or
-> fallback. These are agent-instruction safeguards, not helper-enforced journal,
-> locks or completion gates. Any `gh` examples below apply only to explicitly
-> authorized local tooling, not remote-only mode.
+> **Select each backend explicitly:** hosted ClickUp uses official OAuth MCP.
+> GitHub uses reusable `gh` sign-in by default or an approved hosted GitHub
+> connection when selected. Strict remote-only forbids `gh`. A missing/banned
+> selected backend means STOP; no automatic tool/account switch or local ClickUp
+> helper/bridge fallback. Native activity links do not grant GitHub API tools.
+> These are agent safeguards, not helper journal/locks/completion gates.
 
 # Official ClickUp MCP + GitHub: guarded host-agent workflow
 

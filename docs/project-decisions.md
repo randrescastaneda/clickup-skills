@@ -1,6 +1,25 @@
 # ClickUp Agent Integration Decisions and Current State
 
-## Current mode decision — 27 October 2026
+## Independent backends — 5 November 2026
+
+Current default onboarding selects **hosted ClickUp + GitHub CLI**. ClickUp stays
+on official OAuth MCP with no ClickUp CLI/app/helper token. Reuse `gh` sign-in
+across authorized repositories; verify each target without creating a new token
+per project. `--github hosted` selects an existing hosted connection instead.
+Strict `--mode remote-only` / legacy `--mode oauth` never invokes `gh`;
+`local-helper` / legacy `cli` retains its separate runtime. No automatic fallback.
+
+Native ClickUp–GitHub activity linking/automations and the coding agent's direct
+GitHub actions are separate connections. No native integration or automation is
+enabled by this installer. The 5 November Kilo report confirmed six current skill
+loader bodies, but hosted GitHub was blocked by an empty credential file. That
+historical all-hosted test is not acceptance of this new backend selection.
+Use the dedicated handoff branch for a new installed Kilo test. Offline coverage
+and CI do not establish live OAuth, CLI account access or mutation acceptance.
+Earlier dated sections describe their original revisions, not the new default.
+
+
+## Historical mode decision — 27 October 2026
 
 Main baseline reviewed: `9496cf819f769f64d7fcf41fda24251218b0bdb7` (PR #7).
 The [current mode contract](modes.md) supersedes earlier setup descriptions below.

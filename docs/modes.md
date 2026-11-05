@@ -1,43 +1,109 @@
-# Choose an authorized mode
+# Choose ClickUp and GitHub independently
 
-| | Remote-only | Local-helper |
-| --- | --- | --- |
-| ClickUp | Official hosted MCP at `https://mcp.clickup.com/mcp`, OAuth in the approved host | Krodak `cup` and `cu-work`, separate personal-token sign-in; optional local MCPs |
-| GitHub | Approved hosted GitHub connection with the required repository/tools | Authenticated `gh`; optional host MCP |
-| Local additions | Portable skill files only; no ClickUp desktop app, CLI, helper, Node/Python runtime or bridge needed for manual setup | Python 3.11+, Node 22+, Git and `gh` for the bundled installer |
-| Safeguards | Agent instructions for scope/ancestry, GitHub target first, duplicates, readback, uncertain outcomes and Done evidence | Helper code enforces its scoped operations, journal, local OS locks and completion checks; direct host calls remain outside it |
+| Selection | ClickUp | Direct agent GitHub actions | Setup |
+| --- | --- | --- | --- |
+| Hosted (default) | Official OAuth MCP | Reusable GitHub CLI browser login | `onboard --mode hosted --github cli` |
+| Hosted + hosted GitHub | Official OAuth MCP | Existing approved hosted GitHub connection | `onboard --mode hosted --github hosted` |
+| Strict remote-only | Official OAuth MCP | Approved hosted GitHub only; no `gh` | `onboard --mode remote-only` |
+| Local-helper | Separate `cup`/`cu-work` runtime and ClickUp token | Authenticated `gh` | `onboard --mode local-helper` |
 
-The **ClickUp desktop app** is a user interface, **`cup`** is a local CLI, and the **official MCP** is a hosted service. None requires installing the ClickUp desktop app. ClickUp also exposes a [REST API](https://developer.clickup.com/docs/authentication); MCP is not the only integration route. REST credentials and hosted MCP OAuth are separate. No mode authorizes bypassing an organizational ban on ClickUp, GitHub or external connections.
+Omitting flags selects hosted ClickUp + GitHub CLI. Legacy `oauth` still aliases
+strict remote-only and never authenticates `gh`; legacy `cli` aliases local-helper.
+Contradictory selections, such as `--mode remote-only --github cli`, are rejected
+before settings, package installation or authentication. The existing local
+helper requires GitHub CLI; selecting hosted GitHub with it is rejected.
 
-## Manual route with no extra local tools
+## Default daily workflow
 
-Use an existing approved agent that can load portable skill files **and** connect directly to remote HTTP MCP with OAuth. Installation means adding skill files to that host's supported skill location or import UI, not installing a new executable.
+```bash
+npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --mode hosted --github cli
+```
 
-1. Download the repository ZIP from GitHub in a browser, or use an administrator-provided reviewed copy. Copy/import the six directories under `skills/`, including their `references/` and MIT notices (`LICENSE` and `third_party/` when distributing the repository). Preserve the directory structure. Do not run `npx`, Python, `setup`, `cup` or a bridge. Do not overwrite skills owned by another installer or locally customized copies.
-2. In the host's supported connection UI, add the official ClickUp endpoint `https://mcp.clickup.com/mcp` as direct HTTP/Streamable HTTP with OAuth. Reuse an existing validated connection. Confirm administrator approval and authorize only through the host. No personal API token is used by this endpoint.
-3. Use an approved existing **hosted GitHub connection** with the required repository and issue/PR/check tools. Add GitHub's official remote endpoint `https://api.githubcopilot.com/mcp/` only if that host supports its authentication and the organization approves it. Its OAuth requires host-specific registration; DCR support alone is insufficient. Do not create OAuth apps/credentials to make it work without separate authorization.
-4. Reload the host, discover the six skills and actual tool schemas, and perform authenticated read-only identity, Workspace/List/root ancestry and GitHub repository reads. Connection status alone is insufficient. The agent must load the guarded issue-first protocol before a write.
-5. If skill loading, direct remote OAuth, GitHub tools or service approval is missing, **STOP and report the missing approved connection/capability**. Do not install `gh`, `cup`, `cu-work`, `npx mcp-remote`, Docker or another bridge as fallback. Select local-helper only when the user and organization explicitly allow local tools.
+The convenience installer runs Node 22+, Python 3.11+ and Git. It copies skills,
+configures `https://mcp.clickup.com/mcp`, then checks/reuses `gh` sign-in or
+starts GitHub's browser flow when needed. Install GitHub CLI separately if it is
+missing and allowed; the installer never silently installs it. Reuse one account
+across its authorized repositories, subject to organization policies. Verify each
+project's owner/repository and scope. No manually created per-repository token is
+required for this path.
 
-These are instructions for compatible hosts, not a universal import format. `mcp.json` follows the repository's existing agent-plugins schema; `.mcp.json` uses Claude-style JSON; Codex needs TOML, VS Code uses `servers`, and Kilo uses its own `mcp` structure. A manifest parse/render test does not prove the host accepts the server or completes OAuth. Do not paste a generic manifest into an unsupported host.
+No ClickUp desktop app, ClickUp CLI, `cu-work`, local helper token or bridge is
+required. The **ClickUp desktop app** is a UI; `cup` is a CLI; official MCP is a
+hosted service. ClickUp also provides a [REST API](https://developer.clickup.com/docs/authentication),
+whose credentials remain separate from hosted OAuth.
 
-## Host constraints checked against official documentation (27 October 2026)
+The terminal does not authenticate ClickUp OAuth or prove repository access from
+GitHub sign-in alone. Reload the agent and verify actual authenticated reads.
+The private installer receipt records mode and GitHub backend. Existing local
+helpers and user-managed MCP entries are preserved; their presence does not
+authorize their use for the selected workflow.
 
-| Existing host | Direct ClickUp route | GitHub / acceptance limit |
-| --- | --- | --- |
-| Claude Code | Official ClickUp instructions describe native HTTP and `/mcp` OAuth | Use the host's supported approved GitHub connection; this change did not live-test it |
-| Codex | Native Streamable HTTP/OAuth and `[mcp_servers.clickup_official]` with `url` are documented | Host-specific GitHub authentication must be verified; no new client/OAuth test here |
-| VS Code Copilot Chat | Native HTTP MCP in `.vscode/mcp.json`, trusted project and Agent mode | GitHub documents remote OAuth for VS Code 1.101+; organization MCP policies must permit it |
-| Kilo | Earlier macOS pilot established hosted ClickUp reads and a bounded agent workflow | Earlier GitHub remote DCR attempt failed. That pilot used local `gh`, so it **does not establish complete remote-only acceptance**. Without another approved hosted GitHub connection, stop |
-| Claude web / Desktop | ClickUp documents connector UI for eligible plans; skill import/discovery is a separate host capability to verify | A connector alone does not install this repository's skills |
-| Other / legacy hosts | Verify direct HTTP/OAuth and skill loading first | ClickUp's `npx mcp-remote` examples run a local bridge and **do not qualify as remote-only/no-install**, even though the destination is hosted |
+## Native ClickUp–GitHub integration versus agent access
 
-Sources: [ClickUp endpoint/authentication](https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server), [ClickUp client setup](https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server-1), [Codex MCP](https://developers.openai.com/codex/mcp), [GitHub remote server and host authentication](https://github.com/github/github-mcp-server#remote-github-mcp-server), [GitHub VS Code setup](https://docs.github.com/en/copilot/how-tos/provide-context/use-mcp/set-up-the-github-mcp-server).
+| Connection | Responsibility |
+| --- | --- |
+| ClickUp's native GitHub connection | Configured task/activity links, UI commands and optional automations |
+| Agent → ClickUp MCP | Manage ClickUp tasks, scope and progress |
+| Agent → selected GitHub backend | Direct issue/PR edits, code/diff review and CI checks |
 
-## Optional automated configuration
+The native integration associates commits/branches/PRs containing ClickUp IDs and
+offers GitHub commands in ClickUp. Those UI capabilities do not automatically
+become tools in the documented ClickUp MCP catalog. Reuse native integration for
+its actual coverage; verify configuration and choose one owner for issue creation
+or mirroring. Do not run agent and automation writers for the same action. This
+installer does not enable native connections or rules.
 
-The convenience command `npx --yes github:randrescastaneda/clickup-skills onboard --mode remote-only --client CLIENT` still runs local Node/Python code and Git-based package retrieval. Use it only where those existing tools are allowed. It configures the hosted ClickUp endpoint and copies skills; it does not install/authenticate ClickUp CLI/helper or `gh`, verify hosted OAuth, or provision GitHub connections. `--mode oauth` is a legacy alias for remote-only; it no longer triggers `gh auth`. Existing `gh` sign-ins and local MCP settings are preserved, but must not be used for remote-only work.
+Sources: [ClickUp GitHub integration](https://help.clickup.com/hc/en-us/articles/6305771568791-GitHub-integration),
+[GitHub Automations](https://help.clickup.com/hc/en-us/articles/6305836061463-Use-GitHub-Automations),
+[ClickUp MCP tools](https://developer.clickup.com/docs/mcp-tools),
+[GitHub CLI login](https://cli.github.com/manual/gh_auth_login).
 
-`onboard --mode local-helper` (legacy alias `--mode cli`) installs the supported local runtime and verifies separate CLI sign-ins. Existing `setup`/`update` keep their local-helper semantics. `profiles/default.json` remains the legacy local-helper profile; `profiles/local-helper.json` names it explicitly. `profiles/official.json` and `profiles/remote-only.json` contain only hosted ClickUp. For compatibility, explicit local-helper setup with `--profile official` still combines the local helper with official MCP. `configure.py` prints remote-only by default and never edits settings. GitHub is deliberately not auto-added to remote-only manifests because its authentication depends on the host.
+## Strict manual route with no extra local tools
 
-Local-helper worker functionality and its PR #6 write-budget defect remain separate work tracked by [#12](https://github.com/randrescastaneda/clickup-skills/issues/12) and [#23](https://github.com/randrescastaneda/clickup-skills/issues/23). This mode alignment does not repair it or establish new helper/host safety parity; [#13](https://github.com/randrescastaneda/clickup-skills/issues/13) owns the bridge feasibility question.
+Use an existing approved host supporting skill files and direct remote HTTP/OAuth.
+Import six `skills/` directories with references and MIT notices, preserving
+customized/externally managed copies. Configure official ClickUp MCP in its native
+UI and reuse an approved hosted GitHub connection. Verify skills, actual schemas,
+identity, Workspace/List/root ancestry and exact GitHub target before writing.
+There is no universal import format.
+
+Missing/banned selected tools mean **STOP**. Never install `cup`, `cu-work`,
+`npx mcp-remote`, Docker or another bridge as fallback for hosted ClickUp.
+Strict remote-only and selected hosted GitHub also forbid falling back to `gh`.
+Change modes only explicitly before a new operation; never replay a failed or
+uncertain mutation through a different backend.
+
+## Host constraints and acceptance
+
+| Host | Evidence and remaining limit |
+| --- | --- |
+| Kilo VS Code | Earlier ClickUp OAuth + `gh` pilot passed. The 5 November 7.8.18 report confirmed current skill bodies after backend reload. New installer selection still needs live acceptance. |
+| Kilo hosted GitHub | Earlier OAuth DCR attempt failed; later prepared token file was empty. No full hosted GitHub acceptance. |
+| Codex / Claude Code / Copilot CLI / VS Code Copilot Chat | Offline configuration contracts; verify installed skills, ClickUp OAuth and selected GitHub backend separately. |
+| Other / manual hosts | Verify portable skill loading and direct OAuth first. A local bridge does not qualify as no-extra-local-tools. |
+
+Kilo's observed 7.8.18 backend cached full skill bodies. Use **Developer: Reload
+Window** after updating, then a fresh task and loader-versus-file comparison.
+A new task alone did not reliably refresh that observed backend. This is dated
+local evidence, not a guarantee about every version.
+
+GitHub remote OAuth needs host-specific registration; DCR alone is insufficient.
+Other hosted authentication methods depend on host support and approval.
+[GitHub authentication guidance](https://github.com/github/github-mcp-server/blob/main/docs/host-integration.md).
+No mode bypasses organizational service restrictions.
+
+## Compatibility and guarantees
+
+Rerun the same `onboard` command/flags to update hosted installs. `setup`/`update`
+remain local-helper commands. Existing `default`, `context` and `rest` profiles
+keep local behavior; `official`/`remote-only` manifests contain only hosted
+ClickUp. `configure.py` prints that configuration without editing settings or
+authenticating GitHub. Explicit local-helper + official profile still works.
+GitHub is not auto-added as an MCP.
+
+Hosted calls, including hosted ClickUp + `gh`, follow agent-directed scope,
+duplicate, readback and completion checks. They do not acquire helper receipts,
+OS locks or completion gates. Offline tests do not establish live client/OAuth
+or mutation acceptance. Worker defects/live acceptance remain separate under
+[#12](https://github.com/randrescastaneda/clickup-skills/issues/12) and
+[#23](https://github.com/randrescastaneda/clickup-skills/issues/23).

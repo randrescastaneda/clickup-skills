@@ -7,7 +7,14 @@ Resolve a GitHub repo, issue, or PR before every subtask creation. Create/reuse 
 issue when no target exists. Preserve reciprocal links and discussion provenance;
 never claim continuous synchronization from a session-only tool.
 
-Choose the authorized mode before selecting tools. **Remote-only** uses portable
+Choose ClickUp and GitHub backends independently before selecting tools. Default
+**hosted** mode uses official ClickUp MCP OAuth and reusable `gh` browser sign-in
+for direct GitHub actions. It never installs/authenticates `cup` or `cu-work`.
+`--github hosted` selects approved hosted GitHub tools instead; it is not a
+fallback after failure. Native ClickUp–GitHub integration handles configured
+activity links/automations, but does not grant the coding agent GitHub tools.
+
+Strict **remote-only** uses portable
 skills and approved official hosted ClickUp MCP OAuth, plus an approved hosted
 GitHub connection when required. It needs no ClickUp desktop app, CLI, local
 helper or `npx mcp-remote` bridge. Never install or fall back to local tooling in

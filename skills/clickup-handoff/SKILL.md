@@ -5,12 +5,16 @@ description: Resume a bound ClickUp project, review operation receipts, reconcil
 
 # Resume or hand off work
 
-Choose the authorized mode first. In **remote-only** mode use only approved hosted
-ClickUp/GitHub connections, follow the [host guard protocol](../clickup-github/references/official-mcp-issue-first.md),
-and STOP if they are unavailable or organization-banned. Local commands below
-apply only to explicitly authorized **local-helper** mode. Do not install a CLI,
-helper or `npx mcp-remote` bridge as fallback. Remote safeguards are agent
-instructions, outside the helper journal, locks and completion gates.
+Choose ClickUp and GitHub backends independently. **Hosted ClickUp** uses official
+OAuth MCP; direct GitHub actions use the selected backend (`gh` by default or an
+explicitly selected approved hosted GitHub connection). Reuse account sign-in
+across authorized repositories and verify each project target; no per-repository
+token is required for `gh`. Strict **remote-only** permits hosted connections
+only and forbids `gh`. Missing or banned selected tools mean STOP, not fallback.
+Never use `cup`, `cu-work` or a bridge for hosted ClickUp. Follow the
+[host guard protocol](../clickup-github/references/official-mcp-issue-first.md)
+before hosted writes; these are agent checks outside helper receipts/locks/gates.
+Local ClickUp helper commands below apply only in explicit **local-helper** mode.
 
 Read `.clickup/project.json` and, only in local-helper mode when available, `cu-work context` in the target worktree. With host MCPs only, read the binding and preserve separate host operation evidence; do not assume a helper journal exists. Confirm the project, objective, active task, branch, and repository before resuming. Explicit `--task` is safer than changing shared focus when agents work in parallel.
 
