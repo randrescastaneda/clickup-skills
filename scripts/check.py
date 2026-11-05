@@ -42,11 +42,15 @@ with tempfile.TemporaryDirectory() as temporary:
     for generated in Path(temporary).rglob("*.json"):
         actual = ROOT / generated.relative_to(temporary)
         assert actual.read_text(encoding="utf-8") == generated.read_text(encoding="utf-8"), str(actual) + " is stale"
-for profile in ("default", "official", "context", "rest"):
+for profile in ("remote-only", "local-helper", "default", "official", "context", "rest"):
     rendered = subprocess.run([sys.executable, "scripts/configure.py", "--client", "codex", "--profile", profile],
                               capture_output=True, text=True, encoding="utf-8", check=True)
     config = tomllib.loads(rendered.stdout)
-    assert "clickup_work" in config["mcp_servers"] and "github" in config["mcp_servers"]
+    servers = config["mcp_servers"]
+    if profile in ("official", "remote-only"):
+        assert servers == {"clickup_official": {"url": "https://mcp.clickup.com/mcp"}}
+    else:
+        assert "clickup_work" in servers and "github" in servers
 assert compileall.compile_dir("src", quiet=1)
 subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"], env=env, check=True)
 print("All offline checks passed: skills, manifests, profiles, licenses, Python, and workflows.")

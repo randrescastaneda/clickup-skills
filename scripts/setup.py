@@ -133,6 +133,10 @@ def config_destination(client, project=None):
 
 def desired_config(client, profile, runtime):
     config = read_json(ROOT / "profiles" / (profile + ".json"))
+    if profile == "official":
+        # Preserve explicit local-helper + official-MCP compatibility.
+        local = read_json(ROOT / "profiles/local-helper.json")
+        config["mcpServers"].update(local["mcpServers"])
     config["mcpServers"]["clickup_work"].update(command=str(runtime / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")),
                                               args=["-I", str(runtime / "scripts/run_work.py"), "mcp"])
     text = render_config(client, config)
@@ -141,12 +145,7 @@ def desired_config(client, profile, runtime):
 
 def desired_host_config(client):
     """Agent-hosted OAuth MCP only. Do not install or authenticate cup in this mode."""
-    config = read_json(ROOT / "profiles/official.json")
-    config["mcpServers"].pop("clickup_work")
-    # Every supported client's OAuth path uses authenticated gh for GitHub.
-    # GitHub MCP is optional and client-specific. Do not create duplicate or
-    # inaccessible remote GitHub MCP servers by default.
-    config["mcpServers"].pop("github")
+    config = read_json(ROOT / "profiles/remote-only.json")
     text = render_config(client, config)
     return tomllib.loads(text) if client == "codex" else json.loads(text)
 
@@ -176,7 +175,7 @@ def valid_official_oauth_server(server, expected):
     return True
 
 
-def merge_config(text, client, desired, previous):
+def merge_config(text, client, desired, previous, *, disable_legacy_github=False):
     key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(client, "mcpServers")
     data = tomllib.loads(text) if client == "codex" else json.loads(jsonc_text(text), object_pairs_hook=unique_object)
     if not isinstance(data, dict) or not isinstance(data.get(key, {}), dict):
@@ -225,7 +224,7 @@ def merge_config(text, client, desired, previous):
                 continue
             changes[name] = server
         owned[name] = server
-    if client == "kilo" and official is not None and "github" not in desired[key]:
+    if disable_legacy_github and client == "kilo" and official is not None and "github" not in desired[key]:
         # Migrate only an unchanged, installer-owned remote GitHub MCP. The
         # remote auth server lacks DCR support for Kilo; leave unowned/edited
         # user configurations untouched. Disabling is reversible and avoids
@@ -319,6 +318,8 @@ def build_runtime(home, node, npm, digest):
 
 
 def setup(args, home):
+    if args.profile == "remote-only":
+        raise ValueError("Use onboard --mode remote-only for the remote-only profile; local setup was not started.")
     node, npm = os.environ.get("CLICKUP_SKILLS_NODE"), os.environ.get("CLICKUP_SKILLS_NPM_CLI")
     if not node or not npm:
         raise ValueError("Run setup through npx so Node and npm can be located automatically.")
@@ -372,8 +373,10 @@ def setup(args, home):
 
 def setup_host(args, home):
     """Install the agent skills and hosted OAuth MCP. Never read local CLI credentials."""
-    if args.profile not in ("default", "official"):
-        raise ValueError("OAuth onboarding supports only the official ClickUp MCP; omit --profile context.")
+    from onboard import resolve_backends
+    mode, github_backend = resolve_backends(getattr(args, "mode", None), getattr(args, "github", None))
+    if args.profile not in ("default", "official", "remote-only"):
+        raise ValueError("Remote-only onboarding supports only the official ClickUp MCP; omit local profiles.")
     project = args.project_dir.resolve() if args.project_dir else None
     if project and not project.is_dir():
         raise ValueError("The project directory must already exist.")
@@ -386,7 +389,8 @@ def setup_host(args, home):
     if not args.skip_skills:
         install(skills, update=True, dry_run=True)
     merged, owned = merge_config(source, args.client, desired_host_config(args.client),
-                                 receipt.get("servers", {}))
+                                 receipt.get("servers", {}),
+                                 disable_legacy_github=github_backend == "cli")
     if (destination.read_bytes() if destination.exists() else None) != original:
         raise ValueError("Client settings changed during OAuth setup. Rerun; settings were preserved.")
     if not args.skip_skills:
@@ -397,28 +401,30 @@ def setup_host(args, home):
             atomic_write(backup, source)
             print("Settings backup: " + str(backup))
         atomic_write(destination, merged)
-    save_json(receipt_path, {"config": str(destination), "servers": owned, "mode": "oauth"})
+    save_json(receipt_path, {"config": str(destination), "servers": owned,
+                             "mode": mode, "github": github_backend})
     print("\nOAuth setup complete: " + ("external skills unchanged" if args.skip_skills else "six managed skills") +
-          ", official ClickUp MCP configuration. GitHub uses your authenticated gh CLI.")
+          ", official ClickUp MCP configuration. GitHub backend: " + github_backend + ".")
     print("Client settings: " + str(destination))
-    print("No ClickUp API token, local workflow runtime, or Krodak CLI is required by this mode.")
+    print("Hosted ClickUp: no ClickUp desktop app, API token, local helper, CLI, or mcp-remote bridge.")
+    print("Use only the selected GitHub backend; do not automatically change backends on failure.")
     key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(args.client, "mcpServers")
     config = tomllib.loads(merged) if args.client == "codex" else json.loads(jsonc_text(merged))
     aliases = [name for name, server in config[key].items() if isinstance(server, dict)
                and server.get("url") == "https://mcp.clickup.com/mcp"]
     print("Official ClickUp MCP server name: " + (", ".join(aliases) if aliases else "(not found; check configuration)"))
-    if args.client == "kilo":
+    if args.client == "kilo" and github_backend == "hosted":
         github = config[key].get("github")
         if isinstance(github, dict) and github.get("url") == GITHUB_REMOTE_URL:
             if github.get("enabled", True) is False:
-                print("Previously installer-managed incompatible GitHub MCP is disabled; use gh instead.")
+                print("Previously installer-managed incompatible GitHub MCP is disabled; verify an approved hosted GitHub connection instead.")
             else:
-                print("WARNING: A user-managed remote GitHub MCP is still enabled. It may fail OAuth in Kilo.")
-                print("The installer preserved it; use gh or disable this remote server manually.")
+                print("An existing remote GitHub MCP is enabled and was preserved; verify its supported authentication.")
+                print("The earlier Kilo DCR attempt failed; that does not test every hosted authentication method.")
         else:
-            print("GitHub in Kilo: use your authenticated gh CLI. No remote GitHub MCP required.")
+            print("GitHub in Kilo: a compatible approved hosted GitHub connection is required for the selected backend.")
     if "clickup_work" in config[key]:
-        print("An existing local clickup_work server was preserved. It does NOT share the hosted OAuth session.")
+        print("An existing local clickup_work server was preserved. Do not use it for hosted ClickUp; it does NOT share hosted OAuth.")
     print("Reload the agent; authorize the official ClickUp MCP in its browser OAuth flow if prompted.")
     print("Only the running agent can verify its hosted OAuth, tools, account, workspace and task scope.")
 
@@ -436,14 +442,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, epilog="Also: cup <arguments> or work <cu-work arguments> after setup.")
     parser.add_argument("command", choices=["setup", "update", "onboard"])
     parser.add_argument("--client", choices=CLIENTS)
-    parser.add_argument("--mode", choices=["oauth", "cli"],
-                        help="Onboarding mode: oauth (default, hosted official MCP) or cli (personal API token/full helper).")
+    parser.add_argument("--mode", choices=["hosted", "remote-only", "local-helper", "oauth", "cli"],
+                        help="ClickUp mode: hosted (default), strict remote-only, or local-helper. oauth/cli are legacy aliases.")
+    parser.add_argument("--github", choices=["cli", "hosted"],
+                        help="GitHub backend, independent of hosted ClickUp: cli (default) or hosted. remote-only requires hosted.")
     parser.add_argument("--skip-skills", action="store_true", help="Leave externally installed skills untouched (e.g. npx skills add)")
-    parser.add_argument("--profile", choices=["default", "official", "context"], default="default")
+    parser.add_argument("--profile", choices=["default", "official", "remote-only", "local-helper", "context"], default="default")
     parser.add_argument("--project-dir", type=Path, help="Install project skills and config instead of personal settings")
     options = parser.parse_args(args)
-    if options.command != "onboard" and options.mode is not None:
-        parser.error("--mode is supported only for onboard; setup/update retain their existing CLI behavior.")
+    if options.command != "onboard" and (options.mode is not None or options.github is not None):
+        parser.error("--mode and --github are supported only for onboard; setup/update retain their existing CLI behavior.")
     if options.client is None:
         if options.command == "onboard":
             from onboard import choose_client
@@ -451,15 +459,15 @@ def main():
         else:
             parser.error("--client is required for setup and update.")
     if options.command == "onboard":
-        from onboard import run_onboarding
-        mode = options.mode or "oauth"
-        if mode == "oauth":
+        from onboard import resolve_backends, run_onboarding
+        options.mode, options.github = resolve_backends(options.mode, options.github)
+        if options.mode in ("hosted", "remote-only"):
             setup_host(options, home)
-            run_onboarding(None, mode="oauth")
+            run_onboarding(None, mode=options.mode, github=options.github)
         else:
             setup(options, home)
             active = read_json(home / "installation.json", {})
-            run_onboarding(Path(active["runtime"]), mode="cli")
+            run_onboarding(Path(active["runtime"]), mode="local-helper", github=options.github)
     else:
         setup(options, home)
 

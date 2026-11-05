@@ -10,7 +10,7 @@ You do not need to remember `cu-work` commands, MCP tool names, or synchronizati
 ## Which installation mode?
 
 - **Default browser OAuth:** Your agent uses the official ClickUp MCP and
-  authenticated `gh` (or an independently configured working GitHub MCP) directly. It loads the
+  the selected GitHub backend (`gh` by default) directly. It loads the
   [guarded issue-first workflow](clickup-github.html) before any mutation.
   The agent re-reads scope, searches complete history for duplicates, verifies
   a GitHub target before creating a subtask, and stops on uncertain writes.

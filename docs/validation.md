@@ -1,5 +1,39 @@
 # Validation and rollout
 
+## Independent backends — 5 November 2026
+
+Current default onboarding selects **hosted ClickUp + GitHub CLI**. ClickUp stays
+on official OAuth MCP with no ClickUp CLI/app/helper token. Reuse `gh` sign-in
+across authorized repositories; verify each target without creating a new token
+per project. `--github hosted` selects an existing hosted connection instead.
+Strict `--mode remote-only` / legacy `--mode oauth` never invokes `gh`;
+`local-helper` / legacy `cli` retains its separate runtime. No automatic fallback.
+
+Native ClickUp–GitHub activity linking/automations and the coding agent's direct
+GitHub actions are separate connections. No native integration or automation is
+enabled by this installer. The 5 November Kilo report confirmed six current skill
+loader bodies, but hosted GitHub was blocked by an empty credential file. That
+historical all-hosted test is not acceptance of this new backend selection.
+Use the dedicated handoff branch for a new installed Kilo test. Offline coverage
+and CI do not establish live OAuth, CLI account access or mutation acceptance.
+Earlier dated sections describe their original revisions, not the new default.
+
+
+## Historical remote-only mode alignment — 27 October 2026
+
+The [mode guide](modes.md) describes current generated manifests, profiles and
+onboarding. Tests use isolated homes/projects and mocked service fixtures. They
+check that remote-only/the-then-default/legacy-oauth onboarding never authenticates local
+ClickUp or GitHub CLIs, while local-helper/legacy-cli retains its runtime.
+Generated configuration and JSON/TOML contracts are not installed-client or OAuth
+acceptance. No real client installation, new OAuth authorization, live ClickUp
+mutation or organizational policy change was exercised in this implementation.
+The historical Kilo pilot used `gh` and does not prove end-to-end remote-only
+GitHub support. #9–#12 retain live acceptance/safety work; #13 retains journal
+parity feasibility. PR #6's separate worker write-budget defect remains tracked
+under #12/#23 and is not repaired here.
+
+
 ## Automated coverage
 
 `python3 scripts/check.py` runs offline behavioral tests, bytecode compilation,

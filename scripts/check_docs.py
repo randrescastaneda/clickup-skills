@@ -83,6 +83,9 @@ def main():
     assert "browser-based OAuth" in installation and "--mode cli" in installation
     assert 'href="clients.html"' in installation, "Installation must link to per-agent instructions"
     assert "GitHub MCP" in installation and "does not install GitHub MCP" in installation
+    modes = (output / "modes.html").read_text(encoding="utf-8")
+    for phrase in ("no extra local tools", "mcp-remote", "STOP", "agent", "local-helper", "REST API", "DCR"):
+        assert phrase in modes, "Missing mode boundary: " + phrase
     clients_html = (output / "clients.html").read_text(encoding="utf-8")
     for agent_label in ("Kilo Code", "Codex CLI", "Claude Code", "GitHub Copilot CLI",
                         "GitHub Copilot Chat in VS Code", "OpenCode", "Posit Assistant"):
@@ -92,16 +95,13 @@ def main():
                     "onboard --client vscode --project-dir /absolute/path/to/project"):
         assert command in clients_html, "Missing exact client command: " + command
     for verification in ("codex mcp login clickup_official", "claude mcp list",
-                         "copilot mcp list", "Agent mode", "gh auth status"):
+                         "copilot mcp list", "Agent mode", "hosted GitHub"):
         assert verification in clients_html, "Missing client verification: " + verification
     assert "not" in clients_html.lower() and "personal API token" in clients_html
     assert "npm install -g " + cup["package"] + "@" + cup["version"] not in installation
     setups = json.loads((output / "client-setups.json").read_text(encoding="utf-8"))
     for client, data in setups.items():
-        config = json.loads((ROOT / "profiles" / ("official.json" if data["automatic"] else "default.json")).read_text(encoding="utf-8"))
-        if data["automatic"]:
-            config["mcpServers"].pop("clickup_work")
-            config["mcpServers"].pop("github")
+        config = json.loads((ROOT / "profiles" / "remote-only.json").read_text(encoding="utf-8"))
         assert data["config"] == render_config(client if client in CONFIG_CLIENTS else "portable", config)
         if data["automatic"]:
             assert "onboard --client " + client in data["commands"] and "scripts/" not in data["commands"]

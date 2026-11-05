@@ -5,7 +5,18 @@ description: Resume a bound ClickUp project, review operation receipts, reconcil
 
 # Resume or hand off work
 
-Read `.clickup/project.json` and, when available, `cu-work context` in the target worktree. With host MCPs only, read the binding and preserve separate host operation evidence; do not assume a helper journal exists. Confirm the project, objective, active task, branch, and repository before resuming. Explicit `--task` is safer than changing shared focus when agents work in parallel.
+Choose ClickUp and GitHub backends independently. **Hosted ClickUp** uses official
+OAuth MCP; direct GitHub actions use the selected backend (`gh` by default or an
+explicitly selected approved hosted GitHub connection). Reuse account sign-in
+across authorized repositories and verify each project target; no per-repository
+token is required for `gh`. Strict **remote-only** permits hosted connections
+only and forbids `gh`. Missing or banned selected tools mean STOP, not fallback.
+Never use `cup`, `cu-work` or a bridge for hosted ClickUp. Follow the
+[host guard protocol](../clickup-github/references/official-mcp-issue-first.md)
+before hosted writes; these are agent checks outside helper receipts/locks/gates.
+Local ClickUp helper commands below apply only in explicit **local-helper** mode.
+
+Read `.clickup/project.json` and, only in local-helper mode when available, `cu-work context` in the target worktree. With host MCPs only, read the binding and preserve separate host operation evidence; do not assume a helper journal exists. Confirm the project, objective, active task, branch, and repository before resuming. Explicit `--task` is safer than changing shared focus when agents work in parallel.
 
 Read the actual task and relevant comments plus current GitHub issue/PR/check state. Verify its remote GitHub association markers. Run `sync-comments --task ID` / `sync_task_comments` for issue/PR discussions when authorized, observing the pagination/echo rules in `clickup-github`. Local focus and receipts are not authoritative remote state. Inspect pending operations in the reported `local_state` file. Do not print task bodies, credentials, or the entire state file into unrelated logs.
 

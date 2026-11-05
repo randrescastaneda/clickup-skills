@@ -88,11 +88,25 @@ def authenticate_github(gh_path: str | None = None, interactive: bool | None = N
     print("GitHub: authentication verified.")
 
 
-def run_onboarding(runtime: Path | None, *, mode: str = "oauth") -> None:
-    """Finish CLI or hosted-MCP setup without exchanging credentials between them."""
-    if mode not in ("oauth", "cli"):
+def resolve_backends(mode: str | None = None, github: str | None = None) -> tuple[str, str]:
+    """Choose both services before any settings, runtime or authentication writes."""
+    mode = {"oauth": "remote-only", "cli": "local-helper"}.get(mode, mode or "hosted")
+    if mode not in ("hosted", "remote-only", "local-helper"):
         raise ValueError("Unknown onboarding mode.")
-    if mode == "cli":
+    github = github or ("hosted" if mode == "remote-only" else "cli")
+    if github not in ("cli", "hosted"):
+        raise ValueError("Unknown GitHub backend.")
+    if mode == "remote-only" and github != "hosted":
+        raise ValueError("remote-only requires --github hosted; gh is not permitted in that mode.")
+    if mode == "local-helper" and github != "cli":
+        raise ValueError("The local helper requires --github cli; use --mode hosted for hosted GitHub.")
+    return mode, github
+
+
+def run_onboarding(runtime: Path | None, *, mode: str = "hosted", github: str | None = None) -> None:
+    """Finish CLI or hosted-MCP setup without exchanging credentials between them."""
+    mode, github = resolve_backends(mode, github)
+    if mode == "local-helper":
         if runtime is None:
             raise ValueError("The full helper requires an installed runtime.")
         metadata_path = runtime / "runtime.json"
@@ -105,17 +119,27 @@ def run_onboarding(runtime: Path | None, *, mode: str = "oauth") -> None:
         ):
             raise ValueError("The installed ClickUp CLI command is missing or invalid.")
         authenticate_clickup(cup_command)
-    authenticate_github()
-    if mode == "oauth":
-        print("\nTerminal setup complete: official ClickUp MCP configured and GitHub CLI authenticated.")
-        print("ClickUp OAuth is NOT authenticated or verified by this terminal command. GitHub MCP is optional and client-dependent.")
+        authenticate_github()
+    if mode in ("hosted", "remote-only"):
+        if github == "cli":
+            authenticate_github()
+        print("\nTerminal setup complete: official ClickUp MCP configured; ClickUp OAuth still needs verification.")
+        print("ClickUp OAuth is NOT authenticated or verified by this terminal command.")
         print("Restart/reload the agent, authorize clickup_official using its browser OAuth prompt,")
         print("and verify read-only Workspace/task access and discovered schemas.")
         print("This mode uses agent-directed host tools, NOT the helper's durable journal or scope enforcement.")
+        if github == "cli":
+            print("GitHub: reuse the verified gh sign-in across authorized repositories; verify each target repository in the agent.")
+            print("No GitHub MCP or manually created repository-specific token is required for this selected backend.")
+        else:
+            print("GitHub: verify an approved hosted GitHub connection in the agent; STOP if unavailable.")
+            print("Do not install or use gh as fallback for the selected hosted GitHub backend.")
+        print("Missing or banned ClickUp MCP: STOP. Do not install cup, cu-work, a local helper, or mcp-remote as fallback.")
         print("Never route a failed or uncertain host write through the unauthenticated local helper.")
     else:
         print("\nTerminal setup complete: full local helper, skills, MCP configuration, and CLI sign-ins verified.")
         print("Restart/reload your coding agent to verify actual MCP and skill discovery.")
         print("The hosted GitHub MCP may request separate OAuth authorization.")
         print("Local helper safeguards depend on a verified project binding.")
-    print("Native ClickUp-GitHub integration and repository/Workspace access remain separate.")
+    print("ClickUp's native GitHub integration handles configured links/activity; agent GitHub access is separate.")
+    print("No native connection, automation, repository permission or Workspace access is enabled here.")
