@@ -1,41 +1,35 @@
-# PR #26 acceptance evidence
+# PR26 hosted ClickUp + GitHub CLI evidence
 
-- Observed at: YYYY-MM-DD HH:MM TIMEZONE
-- Agent/client and version:
-- OS/editor and version:
-- Tested mode: remote-only
-- Tested code commit:
-- Installed source/version evidence:
-- Report commit/branch: record after push in the final response
-- Objective:
+- Observed at (timezone):
+- Kilo/editor/OS versions:
+- Selected ClickUp / GitHub backends:
+- Pinned implementation commit: `1abd0a79439f4b1b980fb74234416202c87766cf`
+- Installed source/hash evidence:
+- Source commit used for offline checks:
+- Report branch: handoff/pr26-validation
 
-## Results
-
-| Check | PASS / FAIL / BLOCKED / NOT TESTED | Observed evidence |
+| Check | PASS / FAIL / BLOCKED / NOT TESTED | Actual evidence |
 | --- | --- | --- |
-| Loader matches all six installed skills | | |
-| Official ClickUp authenticated reads | | |
-| Hosted GitHub tools discovered | | |
-| Repository, PROD branch, issue #269 reads | | |
-| Configuration preservation | | |
-| Remote write workflow | NOT TESTED unless explicitly authorized | |
+| Update and configuration preservation | | |
+| Backend reload and six loader/file/hash matches | | |
+| Official ClickUp identity and exact test scope | | |
+| gh sign-in and wbpip / PROD / issue269 reads | | |
+| Same account reads clickup-skills / PR26 | | |
+| Known native integration/automation conflicts | | |
+| One child / one backlink within budget | | |
+| Original issue body preserved | | |
+| Guarded second pass with zero writes | | |
+| Required offline checks on pinned code | | |
 
-## Diagnosis and local changes
+## Actions and evidence
 
-State the demonstrated cause, any remaining hypothesis, and each local change. Use redacted paths. Omit credentials and raw configuration.
+Actual tool names/gh commands, redacted local paths, scope and canonical URLs,
+first/second-pass content-write counts, prior object reuse or partial progress,
+configuration differences, check results and any truncated/incomplete evidence.
 
-## Operations
+## Remaining action and limits
 
-- Actual service tools used:
-- ClickUp/GitHub content writes:
-- Git operations used only to publish this report:
-- Local changes/checks:
-- Incomplete or truncated reads:
-
-## Remaining user action
-
-Give the exact smallest next action. Distinguish read-only connection readiness from a later write-capable acceptance test.
-
-## Limits
-
-State what was not tested. Do not infer remote-MCP authentication from successful Git transport, or claim helper-enforced guarantees for agent-directed hosted calls.
+Give the smallest user step if blocked. Distinguish live evidence, mocked checks
+and historical reports. Do not claim all-hosted acceptance, helper-enforced gates,
+cross-machine exactly-once behavior or induced timeout/concurrency testing.
+Never include credentials, raw settings/backups or private task/comment bodies.

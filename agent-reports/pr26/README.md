@@ -1,5 +1,12 @@
 # PR #26 agent exchange
 
+## Current test: hosted ClickUp + GitHub CLI
+
+The user selected hosted ClickUp OAuth MCP with reusable GitHub CLI sign-in.
+Follow [the current test instructions](TEST_HOSTED_CLICKUP_GH.md), targeting code
+commit `1abd0a79439f4b1b980fb74234416202c87766cf`. Earlier all-hosted reports remain historical evidence.
+Do not install/test the older source baseline of this report branch.
+
 This temporary folder carries sanitized acceptance evidence between Andres's local Kilo agent and the reviewing ChatGPT agent.
 
 - Repository: `randrescastaneda/clickup-skills` (public).
