@@ -11,11 +11,13 @@ Strict `--mode remote-only` / legacy `--mode oauth` never invokes `gh`;
 
 Native ClickUp–GitHub activity linking/automations and the coding agent's direct
 GitHub actions are separate connections. No native integration or automation is
-enabled by this installer. The 5 November Kilo report confirmed six current skill
-loader bodies, but hosted GitHub was blocked by an empty credential file. That
-historical all-hosted test is not acceptance of this new backend selection.
-Use the dedicated handoff branch for a new installed Kilo test. Offline coverage
-and CI do not establish live OAuth, CLI account access or mutation acceptance.
+enabled by this installer. The [5 November Kilo report](https://github.com/randrescastaneda/clickup-skills/blob/81cbc3c54de52b4126eb17e1ba8f07994dfc7b6c/agent-reports/pr26/2026-11-05-kilo-hosted-gh-02.md)
+records a bounded pass for hosted ClickUp + `gh` on Kilo 7.8.18 with implementation
+commit `1abd0a79439f4b1b980fb74234416202c87766cf`. After reload, all six skill
+bodies matched the pinned source. The same GitHub account read two repositories.
+The agent created one child, added one issue backlink while preserving the
+original body, and found both on a second pass with zero writes. Hosted GitHub
+acceptance remains pending after the separate all-hosted test lacked a credential.
 Earlier dated sections describe their original revisions, not the new default.
 
 

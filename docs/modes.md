@@ -77,7 +77,7 @@ uncertain mutation through a different backend.
 
 | Host | Evidence and remaining limit |
 | --- | --- |
-| Kilo VS Code | Earlier ClickUp OAuth + `gh` pilot passed. The 5 November 7.8.18 report confirmed current skill bodies after backend reload. New installer selection still needs live acceptance. |
+| Kilo VS Code | The 5 November test passed for hosted ClickUp + `gh` on 7.8.18. It verified current skill loading after reload, one child and backlink, and a repeat pass with zero writes. See [validation](validation.md). |
 | Kilo hosted GitHub | Earlier OAuth DCR attempt failed; later prepared token file was empty. No full hosted GitHub acceptance. |
 | Codex / Claude Code / Copilot CLI / VS Code Copilot Chat | Offline configuration contracts; verify installed skills, ClickUp OAuth and selected GitHub backend separately. |
 | Other / manual hosts | Verify portable skill loading and direct OAuth first. A local bridge does not qualify as no-extra-local-tools. |

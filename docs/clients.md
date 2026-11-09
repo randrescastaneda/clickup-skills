@@ -121,7 +121,7 @@ npx --yes github:randrescastaneda/clickup-skills onboard --mode cli --client kil
 
 Replace `kilo` with `codex`, `claude` or `copilot` as appropriate. The installer then provisions the private Python runtime, `@krodak/clickup-cli@latest`, and local `clickup_work` MCP. The upstream ClickUp CLI may ask you to create a **personal API token** at [ClickUp Settings → Apps](https://app.clickup.com/settings/apps). Complete that prompt **in the terminal**, never in chat, and then bind your project with verified Workspace/List/root task IDs. A running `clickup_work` server without an authenticated CLI or project binding does **not** imply full-helper readiness. Hosted OAuth does not authenticate the helper.
 
-The older `setup --client CLIENT` and `update --client CLIENT` commands remain for advanced users and full-helper maintenance. On the OAuth-only route, rerun `onboard --client CLIENT` to refresh managed skills and hosted configuration.
+The older `setup --client CLIENT` and `update --client CLIENT` commands remain for advanced users and full-helper maintenance. For hosted ClickUp, rerun your original `onboard` command with the same client and backend flags to refresh managed skills and hosted configuration.
 
 ## Standard Vercel Skills CLI — alternative, not an extra step
 
@@ -141,7 +141,7 @@ For Vercel-managed full-helper mode add `--mode cli` to the second command. Use 
 | Personal MCP settings | Configures **one agent on this device**, not every teammate |
 | `.clickup/project.json` | Approved objective, GitHub repo/base and ClickUp Workspace/List/root task scope; **no credentials** |
 | Official hosted ClickUp MCP | Authenticates with browser OAuth inside the **current agent**; a connection indicator alone is not an authorization test |
-| `gh` CLI (local-helper only) | Signs into GitHub in the current terminal environment; verify intended repository **write permission** separately |
+| `gh` CLI (default hosted and local-helper) | Signs into GitHub in the current terminal environment. Verify repository write permission separately. |
 | Native ClickUp–GitHub integration | Separate Workspace/repository administrator authorization; installing these skills does not enable it |
 
 Settings are merged conservatively with private backups. Invalid/duplicate OAuth aliases or locally modified skill files stop installation. When GitHub CLI is selected, an unchanged previously installer-managed **Kilo** GitHub remote entry is disabled; user-edited entries are preserved. When hosted GitHub is selected, the existing remote entry is preserved even if installer-owned; verify its actual authentication rather than inferring failure from the earlier DCR attempt. A configured GitHub MCP is irrelevant to the default `gh` backend.

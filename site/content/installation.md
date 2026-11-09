@@ -25,7 +25,7 @@ Install [Node.js 22+](https://nodejs.org/), Python 3.11+, Git, and GitHub CLI (`
 npx --yes github:randrescastaneda/clickup-skills onboard
 ```
 
-The installer asks which agent to configure. **Press Enter for Kilo Code (default).** If you already know the agent, append the appropriate `--client` option:
+The command installs from `main`, the repository's default branch. The installer asks which agent to configure. **Press Enter for Kilo Code (default).** If you already know the agent, append the appropriate `--client` option:
 
 | Agent you actually run | Terminal command / option |
 | --- | --- |
@@ -73,10 +73,10 @@ Your existing browser OAuth session may continue to work. The installer reuses a
 
 ## What is included and what is not
 
-| Default OAuth mode | Full local helper mode |
+| Default hosted ClickUp + GitHub CLI | Full local helper mode |
 | --- | --- |
 | **No ClickUp API token.** Official ClickUp MCP authorizes in the agent's browser flow | Requires the ClickUp CLI's personal API token, unless it is already configured |
-| Six skills + hosted ClickUp MCP; GitHub uses an approved hosted connection, verified separately | Six skills + private Python workflow + Krodak CLI + local `clickup_work` MCP |
+| Six skills + hosted ClickUp MCP + reusable `gh` sign-in | Six skills + private Python workflow + Krodak CLI + local `clickup_work` MCP |
 | Agents execute operations directly, following a [guarded host issue-first protocol](clickup-github.html) | Local helper enforces project scope and records durable operation receipts when a valid binding is configured |
 | Markers and read-backs reduce duplicates; no local helper journal or cross-machine exactly-once guarantee | Helper journals and OS locks cover local writes, not other machines or direct host calls |
 
@@ -151,11 +151,13 @@ For OpenCode, Posit Assistant, and special/legacy clients, use the [client setup
 
 ## Keep installations current
 
-For an OAuth-only installation, run the same onboarding command with your existing `--client` to reconcile the hosted MCP configuration; update the six skills at the same time if our installer owns them:
+For the default hosted installation, rerun the same onboarding command to refresh the hosted MCP configuration and any skills managed by the installer:
 
 ```bash
 npx --yes github:randrescastaneda/clickup-skills onboard --client kilo
 ```
+
+If you selected a different backend, keep the same mode and backend flags when you rerun `onboard`.
 
 For an installed token-backed local helper, `update` keeps its previous full-runtime semantics:
 
