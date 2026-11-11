@@ -1,5 +1,39 @@
 # ClickUp Agent Integration Decisions and Current State
 
+## Independent backends — 5 November 2026
+
+Current default onboarding selects **hosted ClickUp + GitHub CLI**. ClickUp stays
+on official OAuth MCP with no ClickUp CLI/app/helper token. Reuse `gh` sign-in
+across authorized repositories; verify each target without creating a new token
+per project. `--github hosted` selects an existing hosted connection instead.
+Strict `--mode remote-only` / legacy `--mode oauth` never invokes `gh`;
+`local-helper` / legacy `cli` retains its separate runtime. No automatic fallback.
+
+Native ClickUp–GitHub activity linking/automations and the coding agent's direct
+GitHub actions are separate connections. No native integration or automation is
+enabled by this installer. The 5 November Kilo test passed for hosted ClickUp +
+`gh` within the tested scope. Hosted GitHub acceptance remains pending. See
+[validation](validation.md) for the tested commit and report.
+Earlier dated sections describe their original revisions, not the new default.
+
+
+## Historical mode decision — 27 October 2026
+
+Main baseline reviewed: `9496cf819f769f64d7fcf41fda24251218b0bdb7` (PR #7).
+The [current mode contract](modes.md) supersedes earlier setup descriptions below.
+Remote-only uses approved hosted ClickUp/GitHub connections with agent-instruction
+safeguards; local-helper retains separate CLI authentication, journal, local locks
+and completion checks. Default onboarding no longer authenticates `gh`. Manual
+skill import plus native remote OAuth is the no-extra-local-tools route only for
+compatible approved hosts. Earlier Kilo pilots used local `gh`; no complete
+remote-only client acceptance or new OAuth/write pilot is claimed by this change.
+
+Issue #8 orders this #17 alignment first, then #9 live host acceptance, ahead of
+other open issues. #13 retains enforced-bridge feasibility and #12/#23 retain
+worker write-budget/recovery work. No worker repair, merge or deployment belongs
+to this change. Historical snapshots below are retained as dated evidence.
+
+
 Project reference  |  Updated 21 October 2026
 
 We are building a shared ClickUp workflow for coding agents so the team can define a project objective once, work within its task scope, and keep GitHub work connected. PRs #1–#4 are merged into main: scoped workflows, documentation and Pages automation, latest-release ClickUp CLI installation, and the one-command npx installer. The bounded live host-MCP pilot passed. Team editor acceptance and full continuous synchronization remain separate work. The optional worker described below is a new implementation on feat/sync-worker-rollout, pending merge and live acceptance.

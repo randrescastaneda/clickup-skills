@@ -5,6 +5,17 @@ description: Choose an efficient available CLI or free MCP for a ClickUp/GitHub 
 
 # Route each operation
 
+Choose ClickUp and GitHub backends independently. **Hosted ClickUp** uses official
+OAuth MCP; direct GitHub actions use the selected backend (`gh` by default or an
+explicitly selected approved hosted GitHub connection). Reuse account sign-in
+across authorized repositories and verify each project target; no per-repository
+token is required for `gh`. Strict **remote-only** permits hosted connections
+only and forbids `gh`. Missing or banned selected tools mean STOP, not fallback.
+Never use `cup`, `cu-work` or a bridge for hosted ClickUp. Follow the
+[host guard protocol](../clickup-github/references/official-mcp-issue-first.md)
+before hosted writes; these are agent checks outside helper receipts/locks/gates.
+Local ClickUp helper commands below apply only in explicit **local-helper** mode.
+
 Read the binding and inventory only tools actually present in this session. The backends are `cup`, `rest-mcp` (Joel Thornton), `context-mcp` (hauptsacheNet), `official` (ClickUp), `github-cli`, and `github-mcp`.
 
 | Need | First candidate | Reason |
@@ -18,7 +29,7 @@ Read the binding and inventory only tools actually present in this session. The 
 **Authentication-aware routing:** The table above describes a **full local-helper**
 installation with a working `cup` token. In the default **OAuth host-agent**
 installation, use the connected official ClickUp MCP for ClickUp operations
-and authenticated `gh` or GitHub MCP for GitHub; never choose `cup`,
+and the selected GitHub backend (`gh` by default, or approved hosted tools); never choose `cup`,
 `rest-mcp`, or unbound `clickup_work` merely because it appears in a client
 tool list. Those are separate authentication and receipt domains. Before
 any host write, load the [guarded OAuth issue-first protocol](../clickup-github/references/official-mcp-issue-first.md).
@@ -47,6 +58,12 @@ a create call directly does not exempt it from `clickup-github`'s association ru
 
 The `cu-work` executable and its own MCP can directly execute scoped writes through `cup` or the configured `rest-mcp` runtime. Host `context-mcp`, official ClickUp MCP, and GitHub MCP are invoked by the agent, not proxied by this helper. When using host tools directly, perform fresh workspace/list/ancestry checks and preserve operation markers/receipts yourself. The helper's journal does not capture host calls.
 
-Switch an unavailable backend before dispatch or after a definite capability rejection. After a timeout, malformed response, rate-limit error during a write, or other uncertain outcome, inspect remote state first. Never replay a mutation through another backend. Use `cu-work reconcile` only after establishing whether it applied. Stop if authorization, scope, or required evidence cannot be established.
+If the selected backend is unavailable, stop and report it. A user may explicitly
+choose another allowed backend before a new operation, after its authentication
+and scope are verified. This is not automatic fallback. After a timeout, malformed
+response, rate-limit error during a write, or other uncertain outcome, inspect
+remote state first; never replay through another backend. Use `cu-work reconcile`
+only for local-helper receipts after establishing what applied. Stop when
+authorization, scope or required evidence cannot be established.
 
 Keep tokens in each teammate's account. Free MCP software still uses services with API/plan limits. Do not install paid/proprietary servers or claim one backend is faster without evidence.

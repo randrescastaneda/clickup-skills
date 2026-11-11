@@ -13,7 +13,7 @@ from clickup_skills.clients import CONFIG_CLIENTS, render_config
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--client", choices=CONFIG_CLIENTS, required=True)
-    p.add_argument("--profile", choices=["default", "official", "context", "rest"], default="default")
+    p.add_argument("--profile", choices=["remote-only", "local-helper", "default", "official", "context", "rest"], default="remote-only")
     a = p.parse_args()
     config = json.loads((ROOT / "profiles" / (a.profile + ".json")).read_text(encoding="utf-8"))
     print(render_config(a.client, config), end="")

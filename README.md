@@ -1,12 +1,22 @@
 # ClickUp Skills
 
+## Choose ClickUp and GitHub independently
+
+**Default: hosted ClickUp + GitHub CLI.** Use official ClickUp MCP with browser-based OAuth and reuse `gh` sign-in across authorized GitHub repositories. No ClickUp desktop app, ClickUp CLI, personal ClickUp token, local helper or bridge is required. The installer checks GitHub sign-in; only the running agent can verify ClickUp OAuth and actual repository access.
+
+Use `onboard --mode hosted --github cli` explicitly for this combination. `--mode hosted --github hosted` instead selects an existing approved hosted GitHub connection. **Strict remote-only** (`--mode remote-only`, legacy `--mode oauth`) requires both connections to be hosted and never invokes `gh`. Missing or banned selected backends mean STOP; do not automatically fall back.
+
+**Local-helper** (`--mode local-helper`, legacy `--mode cli`) separately installs `cup`/`cu-work` and requires its own ClickUp token. Existing `setup`/`update` keep their local-helper semantics. Hosted operations use agent-instruction safeguards, outside helper receipts, locks and completion gates.
+
+The convenience installer runs Node 22+, Python 3.11+ and Git; the default also needs an already allowed GitHub CLI. The strict manual route can use existing hosts with no extra local tools. See [modes and host constraints](docs/modes.md).
+
 [Documentation and team setup](https://randrescastaneda.github.io/clickup-skills/) · [Agent usage examples](https://randrescastaneda.github.io/clickup-skills/examples.html)
 
 Give coding agents one project objective and ClickUp task scope, then keep their
 implementation, subtasks, progress, and GitHub PRs connected to that scope.
 
 **Default:** use ClickUp's official browser-OAuth MCP through your coding agent
-and authenticated `gh` for GitHub. The optional local `cu-work` helper uses
+and the selected GitHub backend (`gh` by default) for direct GitHub operations. The optional local `cu-work` helper uses
 Krodak's CLI and a separate personal-token sign-in to enforce project scope,
 record durable receipts and run a bounded sync worker. Other community MCPs are
 advanced options, not required installation steps.
@@ -22,26 +32,26 @@ advanced options, not required installation steps.
 | Claude Code marketplace + portable/Codex manifests | Team installation from this repository |
 | Copilot, Kilo, VS Code, and Posit adapters | Render each client's own MCP format from the same profiles |
 | Optional MCP profiles | Official ClickUp, rich-context community MCP, and REST community MCP |
-| Optional GitHub MCP configuration | Advanced agent-specific option; default onboarding uses authenticated `gh` |
+| Optional GitHub MCP configuration | Host-specific approved connection; remote-only never invokes local `gh` |
 
 There is no paid integration dependency. ClickUp/GitHub service permissions,
 rate limits, plan features, and your model provider's charges still apply.
 
 ## Recommended: browser OAuth in two actions
 
-**Prerequisites:** Node.js 22+, Python 3.11+, Git, and [GitHub CLI](https://cli.github.com/). Run in macOS Terminal or Windows PowerShell:
+**Prerequisites:** Node.js 22+, Python 3.11+, Git, and GitHub CLI (`gh`) for the default GitHub backend. Run in macOS Terminal or Windows PowerShell:
 
 ```bash
 npx --yes github:randrescastaneda/clickup-skills onboard
 ```
 
-The installer asks which coding agent to use (**Kilo Code is the default**). It installs six portable skills, configures **ClickUp's official hosted MCP**, and verifies GitHub CLI sign-in. It uses authenticated **`gh` for GitHub in all clients**; a GitHub MCP is optional and must be authenticated separately. Existing agent settings are preserved. It does **not** ask for a ClickUp personal API token or install the Krodak CLI. [See the exact command and authorization steps for Kilo, Codex, Claude Code, Copilot CLI and VS Code Copilot Chat](docs/clients.md).
+The installer asks which coding agent to use (**Kilo Code is the default**). It installs six portable skills, configures **ClickUp's official hosted MCP**, and checks/reuses `gh` browser sign-in for GitHub. This does not install or authenticate a local ClickUp helper. Choose `--github hosted` when an approved hosted GitHub connection is preferred; strict remote-only never invokes CLI authentication. Existing agent settings are preserved. It does **not** ask for a ClickUp personal API token or install the Krodak CLI. [See the exact command and authorization steps for Kilo, Codex, Claude Code, Copilot CLI and VS Code Copilot Chat](docs/clients.md).
 
 **Then reload your coding agent and paste:**
 
 ```prompt
 Use the clickup-setup skill to verify the six skills, my official ClickUp
-MCP OAuth connection, GitHub tools, and read-only Workspace/task access.
+MCP OAuth connection, selected GitHub backend (gh by default), and read-only Workspace/task access.
 Guide me through browser authorization only if needed. Do not change
 anything. Report exactly what is connected and what is missing.
 ```
@@ -58,7 +68,7 @@ npx --yes github:randrescastaneda/clickup-skills onboard --mode cli --client kil
 
 This installs our private Python workflow, Krodak's `@krodak/clickup-cli@latest`, and the local `clickup_work` MCP. If needed, the terminal guides a **personal API token** sign-in from [ClickUp Settings → Apps](https://app.clickup.com/settings/apps). The token-based helper cannot borrow the official MCP's OAuth session. Conversely, its durable receipts, scoped mutations, and shared OS lock do **not** apply when an agent calls the hosted MCP directly.
 
-The earlier software-only `setup --client kilo` and full-runtime `update --client kilo` commands remain supported. An OAuth-only installation refreshes configuration/managed skills by rerunning `onboard --client kilo`. Existing local `clickup_work` settings are not removed or authenticated by switching to OAuth.
+The earlier software-only `setup --client kilo` and full-runtime `update --client kilo` commands remain supported. A hosted installation refreshes configuration/managed skills by rerunning the same `onboard` command, including any explicit backend flags. Existing local `clickup_work` settings are not removed or authenticated by switching to OAuth.
 
 ### Alternative: manage skills through Vercel
 
@@ -107,7 +117,7 @@ Claude Code:
 ```
 
 This **advanced marketplace path is separate from the recommended OAuth
-onboarding** and may configure the local workflow MCP and a GitHub MCP. It does
+onboarding**; its generated root manifest now configures only official hosted ClickUp MCP. Verify hosted GitHub separately. It does
 not install or authenticate the Python/Krodak runtime. Prefer `onboard --client claude` for browser-OAuth-only setup; do not install duplicate skills or servers.
 Installing the marketplace plugin does not grant Workspace/repository access.
 
@@ -116,7 +126,7 @@ Codex and OpenCode can use the same portable skills:
 ```bash
 python3 scripts/install_skills.py --client codex
 # Or: python3 scripts/install_skills.py --client opencode
-python3 scripts/configure.py --client codex --profile default
+python3 scripts/configure.py --client codex --profile remote-only
 ```
 
 Merge the printed TOML into your Codex MCP configuration; the script never edits
@@ -202,7 +212,7 @@ not force every agent to load a skill in every repository.
 ```bash
 cu-work --project-dir /absolute/project route task.context --available cup,context-mcp,official
 python3 scripts/configure.py --client claude --profile context
-python3 scripts/configure.py --client codex --profile official
+python3 scripts/configure.py --client codex --profile local-helper
 ```
 
 `route` is a deterministic recommendation over the capabilities you supply. It
@@ -210,7 +220,7 @@ does not benchmark servers, inspect the host inventory, or execute the selected
 tool. The agent discovers the actual MCP schemas and applies scope checks. Enable
 only the profiles you need; merge their named servers into your client settings
 without removing other servers. When using a Claude plugin, avoid registering its
-default `clickup_work`/`github` servers a second time under global/project settings.
+default `clickup_official` server a second time under global/project settings.
 
 To execute the local helper through the alternative free MCP:
 

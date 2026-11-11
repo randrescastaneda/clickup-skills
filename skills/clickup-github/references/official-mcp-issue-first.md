@@ -1,3 +1,10 @@
+> **Select each backend explicitly:** hosted ClickUp uses official OAuth MCP.
+> GitHub uses reusable `gh` sign-in by default or an approved hosted GitHub
+> connection when selected. Strict remote-only forbids `gh`. A missing/banned
+> selected backend means STOP; no automatic tool/account switch or local ClickUp
+> helper/bridge fallback. Native activity links do not grant GitHub API tools.
+> These are agent safeguards, not helper journal/locks/completion gates.
+
 # Official ClickUp MCP + GitHub: guarded host-agent workflow
 
 This is the **agent-executed** protocol for browser-OAuth installations. It applies
