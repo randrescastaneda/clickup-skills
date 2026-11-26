@@ -72,9 +72,12 @@ def render_install():
 def manifest():
     """SHA-256 of every file in each skill, for verifying manual copies."""
     skills = {}
-    for folder in sorted(p for p in (SOURCE / "skills").iterdir() if (p / "SKILL.md").is_file()):
-        files = sorted(f for f in folder.rglob("*") if f.is_file() and not f.name.startswith(".")
-                       and "__pycache__" not in f.parts)
+    # Sort by plain strings: Path objects compare case-insensitively on Windows, which
+    # would reorder the keys there and make the committed manifest look stale.
+    for folder in sorted((p for p in (SOURCE / "skills").iterdir() if (p / "SKILL.md").is_file()),
+                         key=lambda p: p.name):
+        files = sorted((f for f in folder.rglob("*") if f.is_file() and not f.name.startswith(".")
+                        and "__pycache__" not in f.parts), key=lambda f: f.relative_to(folder).as_posix())
         skills[folder.name] = {f.relative_to(folder).as_posix(): hashlib.sha256(
             (ROOT / f.relative_to(SOURCE)).read_bytes() if (ROOT / f.relative_to(SOURCE)).is_file() else f.read_bytes()
         ).hexdigest() for f in files}
