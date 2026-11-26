@@ -148,7 +148,7 @@ def render_page(slug, page, pages, project, sha, url):
     esc = html.escape
     source_map = {p["source"]: key for key, p in pages.items()}
     body = rewrite_links(page["body"], page["source"], source_map, sha)
-    md = markdown.Markdown(extensions=["fenced_code", "tables", "toc", "md_in_html", "sane_lists"], extension_configs={"toc": {"permalink": "#"}})
+    md = markdown.Markdown(extensions=["fenced_code", "tables", "toc", "md_in_html", "sane_lists", "attr_list"], extension_configs={"toc": {"permalink": "#"}})
     rendered = md.convert(body)
     nav = ""
     for section, links in NAV:
@@ -171,7 +171,7 @@ def render_page(slug, page, pages, project, sha, url):
     canonical = url + slug + ".html" if slug != "index" else url
     return f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f8f5"><title>{esc(page['title'])} · ClickUp Skills</title><meta name="description" content="{esc(page.get('description', 'ClickUp Skills documentation'))}"><link rel="canonical" href="{esc(canonical)}"><meta property="og:title" content="{esc(page['title'])} · ClickUp Skills"><meta property="og:description" content="{esc(page.get('description',''))}"><meta property="og:type" content="website"><meta property="og:url" content="{esc(canonical)}"><link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/style.css"><script src="assets/app.js" defer></script></head>
-<body class="{'home' if slug == 'index' else 'docs'}"><a class="skip-link" href="#content">Skip to content</a>
+<body class="{'home' if slug == 'index' else 'docs installation' if slug == 'installation' else 'docs'}"><a class="skip-link" href="#content">Skip to content</a>
 <header class="header"><a class="brand" href="index.html" aria-label="ClickUp Skills home"><span class="brand-mark" aria-hidden="true">⌃</span><span>clickup<span class="brand-light"> skills</span></span><span class="docs-badge">DOCS</span></a><button class="search-trigger" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span>Find something…</span><kbd>⌘ K</kbd></button><div class="header-links"><a href="releases.html" class="version">v{esc(project['version'])}<span class="version-dot"></span></a><a class="github-link" href="{REPO}">GitHub <span>↗</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="sidebar" aria-label="Open navigation">☰</button></div></header>
 <aside class="sidebar" id="sidebar" aria-label="Documentation navigation"><div class="sidebar-top">THE AGENT WORKFLOW TOOLKIT</div><nav>{nav}</nav><a class="sidebar-bottom" href="installation.html"><span class="small-icon">↗</span><strong>New to the plugin?</strong><span>Start with the team setup guide.</span></a></aside><div class="nav-backdrop" hidden></div>
 <div class="page-shell"><main id="content" tabindex="-1"><div class="breadcrumb"><span>Documentation</span><span>/</span>{esc(page['section'])}</div><article>{rendered}</article><nav class="pager" aria-label="Adjacent pages">{pager}</nav><footer class="footer"><span>ClickUp Skills <span class="footer-dot">·</span> Built for agents. Useful for people.</span><a href="{REPO}/blob/{sha}/{page['source']}">View source ↗</a><a href="{REPO}/commit/{sha}">Source {sha[:7]}</a></footer></main><aside class="on-this-page" aria-label="On this page"><p>ON THIS PAGE</p>{toc}<div class="toc-help"><span>Something missing?</span><a href="{REPO}/issues">Open an issue ↗</a><a href="llms.txt">Agent-readable docs ↗</a></div></aside></div>
@@ -204,7 +204,7 @@ def build(output, release_file=None, base_url=DEFAULT_URL):
     for slug, page in pages.items():
         document = render_page(slug, page, pages, project, sha, base_url)
         (output / (slug + ".html")).write_text(document, encoding="utf-8")
-        plain = re.sub(r"<[^>]+>", " ", markdown.markdown(page["body"], extensions=["fenced_code", "tables"]))
+        plain = re.sub(r"<[^>]+>", " ", markdown.markdown(page["body"], extensions=["fenced_code", "tables", "attr_list"]))
         search.append({"title": page["title"], "url": slug + ".html", "section": page["section"], "text": html.unescape(re.sub(r"\s+", " ", plain))})
     for name, data in [("search-index.json", search), ("client-setups.json", client_setups()), ("build-manifest.json", {"source_sha": sha, "source_version": project["version"], "skill_count": len(skill_files), "tools": [t["name"] for t in TOOLS], "pages": sorted(pages), "latest_release": release})]:
         (output / name).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

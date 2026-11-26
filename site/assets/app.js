@@ -50,6 +50,31 @@
     pre.append(button);
   };
   document.querySelectorAll('pre').forEach(addCopy);
+  const installClient = $('#install-client');
+  if (installClient) {
+    const prompt = $('.install-prompt .language-prompt');
+    const original = prompt.textContent;
+    const instructions = original.slice(original.indexOf('\n'));
+    $('#install-client-picker').hidden = false;
+    const updatePrompt = () => {
+      prompt.textContent = installClient.value
+        ? `Install ClickUp Skills for ${installClient.value}.${instructions}`
+        : original;
+    };
+    installClient.addEventListener('change', updatePrompt);
+    updatePrompt();
+
+    const openOption = (hash) => {
+      const option = document.getElementById(hash.slice(1))?.closest('details.install-option');
+      if (option) option.open = true;
+    };
+    $('.install-methods').addEventListener('click', (event) => {
+      const method = event.target.closest('a');
+      if (method) openOption(method.hash);
+    });
+    window.addEventListener('hashchange', () => openOption(window.location.hash));
+    openOption(window.location.hash);
+  }
   document.querySelectorAll('.filter').forEach((button) => button.addEventListener('click', () => {
     document.querySelectorAll('.filter').forEach((el) => { const active = el === button; el.classList.toggle('active',active); el.setAttribute('aria-pressed',String(active)); });
     document.querySelectorAll('.example').forEach((el) => { el.hidden = button.dataset.filter !== 'all' && el.dataset.category !== button.dataset.filter; });
