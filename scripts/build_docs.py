@@ -31,9 +31,10 @@ SOURCES = {
     "docs/wiki/github-clickup.md": ("github-integration", "Native integration setup", "Work with your agent"),
     "docs/validation.md": ("validation", "Validation & limits", "Reference"),
     "THIRD_PARTY_NOTICES.md": ("credits", "License & attribution", "Maintain"),
+    "INSTALL.md": ("install-runbook", "Install without Node (agent runbook)", "Start here"),
 }
 NAV = [
-    ("Start here", [("index", "Overview"), ("installation", "Install for your team"), ("project-setup", "Bind your first project")]),
+    ("Start here", [("index", "Overview"), ("installation", "Install for your team"), ("install-runbook", "Install without Node"), ("project-setup", "Bind your first project")]),
     ("Work with your agent", [("using-the-plugin", "Talk to your agent"), ("examples", "Usage examples"), ("synchronization", "GitHub, ClickUp & sync"), ("sync-worker", "Optional sync worker"), ("github-integration", "Native integration setup")]),
     ("Reference", [("modes", "Choose a mode"), ("reference", "Skills & MCP tools"), ("clients", "Client setup matrix"), ("profiles", "Backends & profiles"), ("binding-reference", "Project binding"), ("cli", "CLI for agents"), ("contract", "Execution contract"), ("validation", "Validation & limits"), ("troubleshooting", "Troubleshooting")]),
     ("Maintain", [("maintenance", "Documentation pipeline"), ("project-decisions", "Project decisions"), ("releases", "Version & releases"), ("credits", "License & attribution")]),
@@ -104,7 +105,7 @@ def collect_pages():
 
 
 def client_setups():
-    destinations = {"claude": "Use the marketplace plugin; it supplies its default MCP servers and skills.", "codex": "Merge the printed TOML into your Codex config.toml under [mcp_servers.*].", "copilot": "Merge the output into ~/.copilot/mcp-config.json or the installed harness's supported project .mcp.json.", "kilo": "Merge into the current Kilo .kilo/kilo.jsonc or existing kilo.jsonc, under mcp. Older extensions need their own legacy settings.", "opencode": "Install portable skills; verify your OpenCode version's MCP settings before adopting the portable manifest.", "posit": "Merge into .posit/assistant/settings.json under mcpServers. Configure skills using the installed Assistant's supported mechanism.", "vscode": "Merge into .vscode/mcp.json under servers. This does not configure a separate Copilot CLI session."}
+    destinations = {"claude": "The marketplace plugin supplies the six skills and the official ClickUp MCP (clickup_official) only; it adds no clickup_work or GitHub server. Use one route per machine: plugin skills are namespaced, so another copy in ~/.claude/skills appears twice.", "codex": "Merge the printed TOML into your Codex config.toml under [mcp_servers.*].", "copilot": "Merge the output into ~/.copilot/mcp-config.json or the installed harness's supported project .mcp.json.", "kilo": "Merge into the current Kilo .kilo/kilo.jsonc or existing kilo.jsonc, under mcp. Older extensions need their own legacy settings.", "opencode": "Install portable skills; verify your OpenCode version's MCP settings before adopting the portable manifest.", "posit": "Merge into .posit/assistant/settings.json under mcpServers. Configure skills using the installed Assistant's supported mechanism.", "vscode": "Merge into .vscode/mcp.json under servers. This does not configure a separate Copilot CLI session."}
     setups = {}
     for name, text in destinations.items():
         automatic = name in ("claude", "codex", "copilot", "kilo", "vscode")
@@ -112,7 +113,7 @@ def client_setups():
             commands = f"npx --yes github:randrescastaneda/clickup-skills onboard --client {name}"
             if name == "vscode":
                 commands += " --project-dir /absolute/path/to/project"
-            text = "OAuth-first setup: installs six skills and hosted ClickUp MCP configuration; GitHub uses reusable gh sign-in by default; --github hosted selects an existing approved hosted connection and --mode remote-only forbids local CLI authentication. ClickUp browser authorization and tool verification happen inside the agent. Use --mode local-helper (legacy --mode cli) only for the token-backed local helper."
+            text = "Without Node: python3 scripts/setup.py onboard --client " + name + (" --project-dir /absolute/path/to/project" if name == "vscode" else "") + " from a clone, gh skill install, or the agent-run install runbook (INSTALL.md). With Node, the command below. Hosted ClickUp by default: installs six skills and hosted ClickUp MCP configuration; GitHub uses reusable gh sign-in by default; --github hosted selects an existing approved hosted connection and --mode remote-only forbids local CLI authentication. ClickUp browser authorization and tool verification happen inside the agent. Use --mode local-helper (legacy --mode cli) only for the token-backed local helper."
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
             commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile remote-only"
@@ -196,7 +197,7 @@ def build(output, release_file=None, base_url=DEFAULT_URL):
         release_body += f"[{html.escape(release['tag_name'])}]({release['html_url']}) · Published {release['published_at']}\n\n" + "Release notes and downloadable assets are available on GitHub. Check the release tag before installing; these docs describe current main.\n"
     else:
         release_body += "No published release metadata is bundled in this build. Install from a reviewed source revision; the source package version alone is not proof of a GitHub release. [View GitHub releases](" + REPO + "/releases).\n"
-    release_body += "\n## Updating teammates\n\nA new release or website deployment does not update an installed plugin. Each teammate or their setup agent must update their checkout or marketplace installation, refresh managed skill copies and review dependency/configuration changes. See [installation updates](installation.html#keep-installations-current)."
+    release_body += "\n## Updating teammates\n\nA new release or website deployment does not update an installed plugin. Each teammate or their setup agent must rerun the installation route they used (agent runbook, `gh skill update`, the Python or npx installer, or the marketplace plugin), then reload the agent and review dependency/configuration changes. See [installation updates](installation.html#keep-installations-current)."
     pages["releases"] = {"title": "Version & releases", "section": "Maintain", "description": "Source version, build provenance and published release metadata.", "body": release_body, "source": "pyproject.toml"}
     shutil.copytree(ROOT / "site/assets", output / "assets")
     search = []

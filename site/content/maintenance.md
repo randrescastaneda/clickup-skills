@@ -12,6 +12,7 @@ This site lives in the plugin repository. GitHub Actions builds it from the chec
 | Source of truth | Rebuilt site content |
 | --- | --- |
 | `pyproject.toml` | Current source package version and Python requirement |
+| `INSTALL.md` | The install runbook page that agents follow without Node |
 | `skills/*/SKILL.md` | Skill inventory, descriptions and complete skill reference pages |
 | `src/clickup_skills/mcp.py` | Actual MCP tool names, descriptions, required inputs and schemas |
 | `src/clickup_skills/cli.py` | Current CLI commands and help |
@@ -31,6 +32,20 @@ The site describes **current `main`**, which can be ahead of the latest release.
 - Manual dispatch: rebuild or recover a deployment without changing source.
 
 The deploy job runs only for default-branch or release/manual events after checks pass. PR builds have read-only permissions. Deployment grants `pages: write` and `id-token: write` only to the deployment job and uses the protected `github-pages` environment.
+
+## Generated files that are committed
+
+The website output is never committed, but a few repository files are generated and kept in Git because installers and agents read them directly. `python3 scripts/build_metadata.py` writes them, and `python3 scripts/check.py` fails if any is stale:
+
+| Generated file | Source |
+| --- | --- |
+| `plugin.json`, `mcp.json`, `.mcp.json`, `.claude-plugin/`, `.codex-plugin/`, `profiles/*.json` | The identity, version and server definitions in `scripts/build_metadata.py` |
+| The per-client section of `INSTALL.md` | `src/clickup_skills/clients.py` and the `remote-only` profile |
+| `skills/clickup-setup/references/manual-install.md` | A byte-identical copy of `INSTALL.md` |
+| `skills/clickup-bind-project/assets/project.example.json` | A byte-identical copy of `examples/project.json` |
+| `skills/MANIFEST.json` | SHA-256 of every file in each skill, for verifying manual installs |
+
+Run the generator after editing a skill, `INSTALL.md` or the example binding. The version lives in `scripts/build_metadata.py`, `package.json` and `pyproject.toml`; the check fails unless all three agree. `.gitattributes` keeps text files LF so the hashes match in a Windows clone.
 
 ## Keep narrative guides honest
 

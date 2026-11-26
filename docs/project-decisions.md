@@ -123,3 +123,12 @@ Live local `cup`, REST MCP and worker execution, plain issue-comment writes, inl
 - [ClickUp GitHub Automations instructions](https://help.clickup.com/hc/en-us/articles/6305836061463-Use-GitHub-Automations)
 
 Use this document to resume the project. Recheck live task and repository state before new writes; update this reference when decisions or acceptance results change.
+
+## Addendum — 26 November 2026
+
+The dated snapshots above are kept as written. Since then the plugin ships **six**
+skills: the five workflow skills plus `clickup-setup`. Installation no longer
+assumes Node: besides the npx installer, the skills can be installed by an agent
+following `INSTALL.md`, by `gh skill install`, by `python3 scripts/setup.py onboard`
+from a clone or ZIP, or by the Claude Code marketplace plugin. Node remains
+required only for the npx route and for local-helper mode (`cup` is an npm package).

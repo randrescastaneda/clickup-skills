@@ -1,5 +1,6 @@
 """Install behavior with isolated homes and an offline npm fixture; no account access."""
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -235,6 +236,19 @@ class HostedOAuthSetupTests(unittest.TestCase):
         self.run_host()
         self.assertEqual(self.settings.read_text(encoding="utf-8"), result)
 
+    def test_disabling_the_legacy_github_entry_is_reported_once(self):
+        github = {"type": "remote", "url": "https://api.githubcopilot.com/mcp/"}
+        self.settings.write_text(json.dumps({"mcp": {"github": github}}), encoding="utf-8")
+        receipt = self.home / "clients" / (setup.hashlib.sha256(str(self.settings.resolve()).encode()).hexdigest() + ".json")
+        setup.save_json(receipt, {"servers": {"github": github}})
+        outputs = []
+        for _ in range(2):
+            with patch("sys.stdout", new_callable=io.StringIO) as out:
+                self.run_host()
+            outputs.append(out.getvalue())
+        self.assertIn("Disabled the unchanged GitHub MCP entry", outputs[0])
+        self.assertNotIn("Disabled the unchanged GitHub MCP entry", outputs[1])
+
     def test_preserve_unmanaged_incompatible_github_without_claiming_to_fix_it(self):
         original = json.dumps({"mcp": {
             "github": {"type": "remote", "url": "https://api.githubcopilot.com/mcp/", "enabled": True},
@@ -291,6 +305,7 @@ class HostedOAuthSetupTests(unittest.TestCase):
         with patch.object(sys, "argv", ["setup.py", "onboard", "--client", "kilo"]), \
              patch.object(setup, "setup_host") as host, \
              patch.object(setup, "setup") as local, \
+             patch.object(setup, "report_result"), \
              patch.object(onboard, "run_onboarding") as auth:
             setup.main()
         host.assert_called_once()
@@ -316,6 +331,7 @@ class HostedOAuthSetupTests(unittest.TestCase):
                  patch.object(setup, "setup_host") as host, \
                  patch.object(setup, "setup") as local, \
                  patch.object(setup, "read_json", return_value={"runtime": "/test/runtime"}), \
+                 patch.object(setup, "report_result"), \
                  patch.object(onboard, "run_onboarding") as auth:
                 setup.main()
                 self.assertEqual(host.call_count, int(remote))
@@ -358,24 +374,117 @@ class HostedOAuthSetupTests(unittest.TestCase):
         build.assert_not_called()
 
     def test_remote_entrypoint_runs_without_any_local_auth_or_runtime(self):
-        # End-to-end in a fresh home; no real settings, grants, or remote calls.
-        for mode in ("remote-only", "oauth", "hosted"):
-            with tempfile.TemporaryDirectory() as folder:
+        # End-to-end in a fresh home with no Node, npm or gh on PATH; no real settings, grants, or remote calls.
+        cases = (("remote-only", ["--github", "hosted"], 0, "ready", "not-selected"),
+                 ("oauth", ["--github", "hosted"], 0, "ready", "not-selected"),
+                 ("hosted", ["--github", "hosted"], 0, "ready", "not-selected"),
+                 ("hosted", [], 3, "action-needed", "missing"))
+        for mode, flags, code, status, github_cli in cases:
+            with self.subTest(mode=mode, flags=flags), tempfile.TemporaryDirectory() as folder:
                 root = Path(folder)
                 env = {**os.environ, "HOME": folder, "USERPROFILE": folder,
                        "CLICKUP_SKILLS_HOME": str(root / "managed"), "PATH": ""}
                 result = subprocess.run([sys.executable, "-I", str(ROOT / "scripts/setup.py"),
-                                         "onboard", "--client", "claude", "--mode", mode,
-                                         "--github", "hosted",
+                                         "onboard", "--client", "claude", "--mode", mode, *flags,
                                          "--project-dir", folder], env=env, capture_output=True,
-                                        text=True, encoding="utf-8", check=True)
+                                        stdin=subprocess.DEVNULL, text=True, encoding="utf-8")
+                self.assertEqual(result.returncode, code, result.stderr)
                 config = json.loads((root / ".mcp.json").read_text(encoding="utf-8"))
                 self.assertEqual(set(config["mcpServers"]), {"clickup_official"})
                 self.assertFalse((root / "managed/installation.json").exists())
                 self.assertFalse((root / "managed/releases").exists())
                 self.assertEqual(len(list(root.glob(".claude/skills/*/SKILL.md"))), 6)
                 self.assertIn("STOP", result.stdout)
-                self.assertIn("approved hosted GitHub", result.stdout)
+                lines = [line for line in result.stdout.splitlines() if line.startswith("RESULT ")]
+                self.assertEqual(len(lines), 1)
+                report = json.loads(lines[0][len("RESULT "):])
+                self.assertEqual((report["status"], report["github_cli"], report["client"]), (status, github_cli, "claude"))
+                self.assertEqual(report["server"], "clickup_official")
+                self.assertEqual(Path(report["config"]), (root / ".mcp.json").resolve())
+                self.assertTrue(report["next"])
+                if github_cli == "missing":
+                    self.assertIn("Installation complete", result.stdout)
+                    self.assertIn("gh auth login", " ".join(report["next"]))
+                    self.assertEqual(report["github"], "cli")
+                else:
+                    self.assertIn("approved hosted GitHub", result.stdout)
+
+    def test_onboard_without_terminal_or_client_changes_nothing(self):
+        with tempfile.TemporaryDirectory() as folder:
+            env = {**os.environ, "HOME": folder, "USERPROFILE": folder,
+                   "CLICKUP_SKILLS_HOME": str(Path(folder) / "managed"), "PATH": ""}
+            result = subprocess.run([sys.executable, "-I", str(ROOT / "scripts/setup.py"), "onboard"],
+                                    env=env, capture_output=True, stdin=subprocess.DEVNULL,
+                                    text=True, encoding="utf-8")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("--client", result.stderr)
+            self.assertIn("codex", result.stderr)
+            self.assertEqual(list(Path(folder).iterdir()), [])
+
+
+class StatusTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="clickup status ")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.env = {**os.environ, "HOME": str(self.root), "USERPROFILE": str(self.root),
+                    "CLICKUP_SKILLS_HOME": str(self.root / "managed"), "PATH": ""}
+
+    def run_script(self, *args, check=True):
+        return subprocess.run([sys.executable, "-I", str(ROOT / "scripts/setup.py"), *args],
+                              env=self.env, capture_output=True, stdin=subprocess.DEVNULL,
+                              text=True, encoding="utf-8", check=check)
+
+    def snapshot(self):
+        return sorted((p.relative_to(self.root).as_posix(), p.read_bytes() if p.is_file() else b"")
+                      for p in self.root.rglob("*"))
+
+    def test_status_before_install_writes_nothing(self):
+        before = self.snapshot()
+        report = json.loads(self.run_script("status", "--client", "claude").stdout)
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual(set(report["skills"].values()), {"missing"})
+        self.assertEqual(len(report["skills"]), 6)
+        self.assertEqual(report["official_servers"], [])
+        self.assertIsNone(report["recorded_selection"])
+        self.assertEqual(report["gh"], {"present": False, "authenticated": False})
+        self.assertFalse(report["helper_runtime"])
+
+    def test_status_reads_the_recorded_selection_and_skill_states(self):
+        self.run_script("onboard", "--client", "claude", "--mode", "remote-only")
+        skills = self.root / ".claude/skills"
+        (skills / "clickup-route/SKILL.md").write_text("edited", encoding="utf-8")
+        shutil.rmtree(skills / "clickup-handoff")
+        shutil.copytree(ROOT / "skills/clickup-handoff", skills / "clickup-handoff")
+        shutil.rmtree(skills / "clickup-setup")
+        shutil.copytree(ROOT / "skills/clickup-github", skills / "clickup-setup")
+        before = self.snapshot()
+        report = json.loads(self.run_script("status", "--client", "claude").stdout)
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual(report["recorded_selection"], {"mode": "remote-only", "github": "hosted"})
+        self.assertEqual(report["official_servers"], ["clickup_official"])
+        self.assertEqual(report["skills"]["clickup-github"], "managed")
+        self.assertEqual(report["skills"]["clickup-route"], "managed-modified")
+        self.assertEqual(report["skills"]["clickup-handoff"], "unmanaged-identical")
+        self.assertEqual(report["skills"]["clickup-setup"], "unmanaged-different")
+        receipt = json.loads((skills / "clickup-github/.clickup-skills.json").read_text(encoding="utf-8"))
+        self.assertEqual(receipt["version"], setup.tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"])
+
+    def test_status_reads_a_receipt_written_before_backends_were_recorded(self):
+        # Installers before the independent-backend change stored a mode and no GitHub backend.
+        self.run_script("onboard", "--client", "claude", "--mode", "remote-only")
+        receipt = next((self.root / "managed/clients").glob("*.json"))
+        data = json.loads(receipt.read_text(encoding="utf-8"))
+        del data["github"]
+        data["mode"] = "oauth"
+        receipt.write_text(json.dumps(data), encoding="utf-8")
+        report = json.loads(self.run_script("status", "--client", "claude").stdout)
+        self.assertEqual(report["recorded_selection"], {"mode": "oauth", "github": None})
+
+    def test_status_requires_a_client(self):
+        result = self.run_script("status", check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--client", result.stderr)
 
 
 class PackagedInstallTests(unittest.TestCase):
@@ -424,6 +533,23 @@ class PackagedInstallTests(unittest.TestCase):
         cup = subprocess.run([sys.executable, "-I", str(ROOT / "scripts/setup.py"), "cup", "--version"],
                              env=self.env, capture_output=True, text=True, check=True)
         self.assertIn("9.0.0-test", cup.stdout)
+
+    def test_cu_work_launcher_follows_the_current_runtime(self):
+        launcher = self.managed / "bin" / ("cu-work.cmd" if os.name == "nt" else "cu-work")
+        result = self.run_setup()
+        self.assertIn(str((self.managed / "bin").resolve()), result.stdout)
+        first = Path(json.loads((self.managed / "installation.json").read_text())["runtime"])
+        self.assertIn(str(first), launcher.read_text(encoding="utf-8"))
+        self.assertTrue((self.managed / "bin/cu-work.cmd").is_file())
+        if os.name != "nt":
+            self.assertTrue(os.access(launcher, os.X_OK))
+        help_text = subprocess.run([str(launcher), "--help"], env=self.env, capture_output=True, text=True, check=True)
+        self.assertIn("task-scoped", help_text.stdout)
+        self.run_setup("update")
+        second = Path(json.loads((self.managed / "installation.json").read_text())["runtime"])
+        self.assertNotEqual(first, second)
+        self.assertIn(str(second), launcher.read_text(encoding="utf-8"))
+        self.assertNotIn(str(first), launcher.read_text(encoding="utf-8"))
 
     def test_skip_skills_preserves_external_installation(self):
         skill = self.project / '.kilo/skills/clickup-route/SKILL.md'

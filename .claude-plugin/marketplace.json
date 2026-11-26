@@ -7,7 +7,7 @@
     {
       "name": "clickup-skills",
       "source": "./",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Project-bound ClickUp workflows with CLI/MCP routing and GitHub PR linkage."
     }
   ]

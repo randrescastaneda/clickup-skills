@@ -58,9 +58,7 @@ All checks must pass before writing:
 
 Use a stable, non-secret operation key chosen once per logical attempt:
 `[host-op:KEY]`. **Do not manufacture `[cu-work:...]` receipts**; those
-markers are reserved for the helper's binding-hashed protocol. The previous
-OAuth pilot used `[pilot-op:official-mcp-868mjzgzh-20261022-v1]` and may be
-reused *as evidence*, not as a new operation key.
+markers are reserved for the helper's binding-hashed protocol.
 
 | Preflight evidence | Mandatory decision |
 | --- | --- |
@@ -158,5 +156,5 @@ test** is read-only: honor the user-approved scope and write budget.
 Report verified identities/scope, source URLs, target issue-before-child
 evidence, exact read/write count (when observed), child ID, matching markers,
 body preservation, guarded repeat result, and any unverified protections.
-Use precise labels: **agent-guarded** (OAuth path) versus **helper-enforced**
+Use precise labels: **agent-guarded** (hosted path) versus **helper-enforced**
 (local `clickup_work` with valid project binding and personal token).

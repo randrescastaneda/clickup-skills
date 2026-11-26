@@ -27,21 +27,65 @@ for file in (ROOT / "skills").glob("*/SKILL.md"):
     assert re.search(r"^description: .+", front, re.M), file
     assert "[TODO" not in text, file
     assert (file.parent / "agents/openai.yaml").is_file(), file
+    assert re.search(r"^license: MIT$", front, re.M), file
+    name = re.search(r"^name: (.+)$", front, re.M)[1]
+    assert re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) and len(name) <= 64, file
+    assert len(re.search(r"^description: (.+)$", front, re.M)[1]) <= 1024, file
+    compatibility = re.search(r"^compatibility: (.+)$", front, re.M)
+    assert compatibility and len(compatibility[1]) <= 500, file
+    assert len(text.splitlines()) <= 200, file
+# The five workflow skills open with the same selection check, byte for byte.
+WORKFLOW = ("clickup-bind-project", "clickup-route", "clickup-work-task", "clickup-github", "clickup-handoff")
+blocks = {re.search(r"<!-- selection-check:start -->.*?<!-- selection-check:end -->",
+                    (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8"), re.S)[0] for name in WORKFLOW}
+assert len(blocks) == 1, "The selection-check block differs between workflow skills"
+RETIRED = re.compile(r"full[- ]helper|oauth host-agent|oauth mode|oauth-only|oauth path", re.I)
+for file in (ROOT / "skills").rglob("*.md"):
+    assert not RETIRED.search(file.read_text(encoding="utf-8")), ("Retired mode term", file)
+# Installed skills are copied without the rest of the repository: relative links
+# must stay inside skills/, and every other link must be absolute HTTPS.
+for file in (ROOT / "skills").rglob("*.md"):
+    for target in re.findall(r"\]\(([^)\s]+)\)", file.read_text(encoding="utf-8")):
+        if re.match(r"[a-z]+:", target):
+            assert target.startswith("https:"), (file, target)
+            continue
+        resolved = (file.parent / target.split("#")[0]).resolve()
+        assert resolved.is_file() and resolved.is_relative_to(ROOT / "skills"), (file, target)
 for project in json.loads((ROOT / "upstreams.lock.json").read_text(encoding="utf-8"))["projects"]:
     assert re.fullmatch(r"[a-f0-9]{40}", project["commit"]), project
     notice = (ROOT / project["notice"]).read_text(encoding="utf-8")
     assert project["license"] == "MIT" and "Permission is hereby granted" in notice, project
 
+versions = {json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"],
+            tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]}
 # Check that generated client configurations are reproducible without rewriting source.
 spec = importlib.util.spec_from_file_location("metadata", ROOT / "scripts/build_metadata.py")
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+# INSTALL.md settings paths must match the installer's own destinations.
+setup_spec = importlib.util.spec_from_file_location("setup_installer", ROOT / "scripts/setup.py")
+installer = importlib.util.module_from_spec(setup_spec)
+setup_spec.loader.exec_module(installer)
+from unittest.mock import patch
+with patch.dict(os.environ, {}, clear=False), patch.object(Path, "home", return_value=Path("~")):
+    os.environ.pop("XDG_CONFIG_HOME", None)
+    os.environ.pop("CODEX_HOME", None)
+    for client, _, _, user, project, _ in module.INSTALL_CLIENTS:
+        if user:
+            assert installer.config_destination(client).as_posix() == user, client
+        assert installer.config_destination(client, Path(".")).as_posix() == project, client
+install_text = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
+assert len(install_text.splitlines()) <= 260, "INSTALL.md is too long"
+assert not re.findall(r"\]\((?!https:)[^)]*\)", install_text), "INSTALL.md links must be absolute https"
+for path, source in module.BUNDLED.items():
+    assert (ROOT / path).read_bytes() == (ROOT / source).read_bytes(), path + " differs from " + source
+assert versions == {module.VERSION}, "Version differs between package.json, pyproject.toml and build_metadata.py"
 with tempfile.TemporaryDirectory() as temporary:
     module.ROOT = Path(temporary)
     module.main()
-    for generated in Path(temporary).rglob("*.json"):
+    for generated in (p for p in Path(temporary).rglob("*") if p.is_file()):
         actual = ROOT / generated.relative_to(temporary)
-        assert actual.read_text(encoding="utf-8") == generated.read_text(encoding="utf-8"), str(actual) + " is stale"
+        assert actual.is_file() and actual.read_bytes() == generated.read_bytes(), str(actual) + " is stale"
 for profile in ("remote-only", "local-helper", "default", "official", "context", "rest"):
     rendered = subprocess.run([sys.executable, "scripts/configure.py", "--client", "codex", "--profile", profile],
                               capture_output=True, text=True, encoding="utf-8", check=True)
