@@ -26,7 +26,11 @@ The route decides how the files arrive. The [selection](#choose-clickup-and-gith
 | Claude Code | **D. The client's plugin manager** | `claude plugin marketplace add randrescastaneda/clickup-skills` |
 | Node 22+ and Python 3.11+ | **E. npx** | `npx --yes github:randrescastaneda/clickup-skills onboard --client CLIENT` |
 
-`CLIENT` is `kilo`, `codex`, `claude`, `copilot` or `vscode` (VS Code Copilot Chat, which also needs `--project-dir /absolute/path/to/project`). Use one route per machine: two installers must never manage the same skill folder.
+`CLIENT` is `kilo`, `codex`, `claude`, `copilot` or `vscode` (VS Code Copilot Chat, which also needs `--project-dir /absolute/path/to/project`).
+
+**One installation covers one agent.** Each agent reads its own skills folder and settings file, so install again for every agent you use, changing only `CLIENT`. There is no all-agents option. Your `gh` sign-in is shared by all of them; the ClickUp authorization is approved once inside each agent.
+
+**Warning: one method per agent.** Do not install the skills for the same agent with two methods (for example the npx installer and the Claude Code plugin, or `gh skill` and the Python installer), or at both user and project scope: every skill then appears twice. If the skills are already installed for that agent, upgrade them with the method that installed them, or remove that copy before installing with another method. Some agents also read other agents' skill folders, so after adding a second agent, check that each skill appears once in both.
 
 ### A. Agent-run manual install
 
@@ -55,7 +59,7 @@ Needs `gh` 2.90 or later. The `gh skill` command group is a preview and may chan
 
 Add `--pin TAG` once a release tag exists. For Kilo and Codex pass `--dir`: `gh` 2.95 writes `--agent kilo` to `~/.kilocode/skills` and `--agent codex` to `~/.codex/skills`, not the folders this project uses. Update with `gh skill update --all`, adding the same `--dir` for Kilo and Codex. `gh skill` rewrites each `SKILL.md` frontmatter, so these copies belong to `gh`.
 
-Then register the official ClickUp MCP: `python3 scripts/setup.py onboard --client CLIENT --skip-skills` from a clone, or step 7 of the [install runbook](../INSTALL.md) (the client's own command or the settings snippet).
+Then register the official ClickUp MCP: `python3 scripts/setup.py onboard --client CLIENT --skip-skills` from a clone, or step 8 of the [install runbook](../INSTALL.md) (the client's own command or the settings snippet).
 
 ### C. Python only
 
@@ -153,10 +157,11 @@ npx --yes github:randrescastaneda/clickup-skills onboard --client claude
 ```
 
 - **Installed configuration:** `~/.claude.json`; user skills go in `~/.claude/skills/`.
+- **Close Claude Code before the installer edits that file, or use its own command.** Claude Code rewrites `~/.claude.json` while it runs, so a change made by the installer or by hand can be lost. `claude mcp add --transport http clickup_official --scope user https://mcp.clickup.com/mcp` is safe while it runs. With the VS Code extension, `claude` may not be on PATH: the extension ships it under `resources/native-binary/` in its own folder.
 - **Without Node:** the plugin (route D: `claude plugin marketplace add randrescastaneda/clickup-skills`, then `claude plugin install clickup-skills@clickup-skills-marketplace`), route A, B (`gh skill install randrescastaneda/clickup-skills --all --agent claude-code --scope user`) or C (`python3 scripts/setup.py onboard --client claude`).
 - **Next:** Restart Claude Code. Use `claude mcp list` in your terminal or `/mcp` within Claude Code. Follow its browser OAuth authorization if `clickup_official` says it needs sign-in.
 - **GitHub:** Reuse `gh` sign-in by default. An explicitly selected hosted GitHub connection has independent authorization and must pass repository reads.
-- **Avoid duplicate installs:** The Claude Code marketplace plugin is a separate installation route. It supplies the six skills and the official ClickUp MCP (`clickup_official`) only; it adds no `clickup_work` or GitHub server. Use one route per machine: plugin skills are namespaced (`clickup-skills:clickup-route`), so a second copy in `~/.claude/skills` shows up as duplicates.
+- **Avoid duplicate installs:** The Claude Code marketplace plugin is a separate installation route. It supplies the six skills and the official ClickUp MCP (`clickup_official`) only; it adds no `clickup_work` or GitHub server. Use one method per agent: plugin skills are namespaced (`clickup-skills:clickup-route`), so a second copy in `~/.claude/skills` shows up as duplicates.
 
 [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp). Do not treat the editor's own chat or Claude Desktop settings as the Claude Code CLI settings.
 

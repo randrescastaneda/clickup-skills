@@ -14,11 +14,15 @@ Select the ClickUp mode and the GitHub backend independently. Preserve existing 
 | Request | What to do | Writes |
 | --- | --- | --- |
 | Verify only | Run the checklist in section 4 | Nothing anywhere |
-| Install | Confirm the client and the scope (user, or project with an absolute path); choose a route from section 3; then section 4 | Skills folder and one settings file |
+| Install | Confirm the client and the scope (user, or project with an absolute path); check for an existing installation (below); choose a route from section 3; then section 4 | Skills folder and one settings file |
 | Update | Rerun the same route with the same flags; then section 4 | Only unmodified managed copies |
 | Repair | Diagnose with section 4, then the smallest fix the user approves | Local files only |
 
 Verify and repair never write to ClickUp or GitHub. Confirm the actual coding agent before installing: choose the agent, not the editor it runs in.
+
+An installation covers one agent. Each agent has its own skills folder and settings file, so a second agent needs its own installation; there is no all-agents option. The `gh` sign-in is shared; the ClickUp authorization is approved once in each agent.
+
+Before installing by any route, check whether the skills are already installed for that agent: `python3 scripts/setup.py status --client CLIENT` when Python is available, otherwise step 3 of [`references/manual-install.md`](references/manual-install.md). If they are, stop and ask the user to choose: leave the installation as it is, remove it, or upgrade it. Upgrade with the method that installed it, or remove that copy first and then install with another method. Never leave two copies for one agent.
 
 ## 2. Which backends?
 
@@ -49,7 +53,7 @@ Route B targets: `--agent claude-code --scope user`, `--agent github-copilot --s
 
 Routes C and E take the flags from section 2 and `--project-dir /absolute/project` for project scope. They end with one `RESULT {...}` line of JSON: `status` is `ready` or `action-needed`, and `next` lists what the user still has to do. Exit code 3 means installed, with the selected GitHub backend (`gh`) still needing the user; it is not a failure, and the backend was not switched. Use `--skip-skills` when another installer (`gh skill`, `npx skills`) owns the skill copies. `setup` and `update` remain local-helper commands.
 
-- Use one route per machine. Two installers must never manage the same skill folder, and Claude Code plugin skills are namespaced, so a second copy in `~/.claude/skills` appears twice.
+- Use one method per agent, and one scope (user or project). Two installers must never manage the same skill folder, and Claude Code plugin skills are namespaced, so a second copy in `~/.claude/skills` makes every skill appear twice.
 - The installer validates an existing official-server entry under another name before reusing it, reuses that name, and refuses duplicates. Do the same by hand in route A.
 - With the default `gh` backend, the installer checks the existing sign-in and offers GitHub's browser login when needed. If `gh` is missing, report the prerequisite; never install it silently or change the selected backend.
 - One `gh` sign-in serves every authorized repository. Do not create a token per repository.
