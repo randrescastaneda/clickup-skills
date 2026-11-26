@@ -39,7 +39,7 @@ WORKFLOW = ("clickup-bind-project", "clickup-route", "clickup-work-task", "click
 blocks = {re.search(r"<!-- selection-check:start -->.*?<!-- selection-check:end -->",
                     (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8"), re.S)[0] for name in WORKFLOW}
 assert len(blocks) == 1, "The selection-check block differs between workflow skills"
-RETIRED = re.compile(r"full[- ]helper|oauth host-agent|oauth mode|oauth-only", re.I)
+RETIRED = re.compile(r"full[- ]helper|oauth host-agent|oauth mode|oauth-only|oauth path", re.I)
 for file in (ROOT / "skills").rglob("*.md"):
     assert not RETIRED.search(file.read_text(encoding="utf-8")), ("Retired mode term", file)
 # Installed skills are copied without the rest of the repository: relative links

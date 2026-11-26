@@ -15,6 +15,10 @@ remains Kilo VS Code 7.8.18 on macOS (hosted ClickUp + `gh`, 5 November 2026).
 | Native MCP commands (`claude mcp add`, `codex mcp add`) | Syntax from vendor documentation | from vendor documentation, untested |
 | E. npx | Unchanged | as before |
 
+The offline suite has 146 tests at this revision. Generated JSON is now written with LF on
+every platform, because the staleness check compares bytes; that fix was simulated, and the
+first Windows CI run is its real test.
+
 ## Independent backends — 5 November 2026
 
 Current default onboarding selects **hosted ClickUp + GitHub CLI**. ClickUp stays

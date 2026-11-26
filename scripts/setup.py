@@ -336,7 +336,8 @@ def setup(args, home):
         raise ValueError("Use onboard --mode remote-only for the remote-only profile; local setup was not started.")
     node, npm = os.environ.get("CLICKUP_SKILLS_NODE"), os.environ.get("CLICKUP_SKILLS_NPM_CLI")
     if not node or not npm:
-        raise ValueError("Run setup through npx so Node and npm can be located automatically.")
+        raise ValueError("Local-helper setup needs Node and npm: run it through npx so they can be located automatically. "
+                         "A hosted install needs neither: use onboard.")
     project = args.project_dir.resolve() if args.project_dir else None
     if project and not project.is_dir():
         raise ValueError("The project directory must already exist.")

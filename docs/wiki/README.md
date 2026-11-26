@@ -2,6 +2,7 @@
 
 - [Connect GitHub and ClickUp, choose automations, and synchronize discussions](github-clickup.md)
 - [Install in Codex, Claude Code, Copilot, Kilo, VS Code, and Positron](../clients.md)
+- [Install without Node: the runbook an agent follows](../../INSTALL.md)
 - [Run the wbpip pilot](../pilots/wbpip.md)
 - [Scope, retries, and completion rules](../contract.md)
 

@@ -14,8 +14,8 @@
 
 | Layer | What it does | Setup |
 | --- | --- | --- |
-| This repository's CLI / `clickup_work` MCP | Creates a GitHub target before each subtask, records backlinks, mirrors progress, reconciles discussion snapshots, gates completion | Install `cu-work`, `gh`, and the selected ClickUp runtime; bind the project |
-| Host ClickUp + GitHub MCPs | Agents perform the same workflow with available service tools | Authenticate both MCPs; load the shared skills |
+| This repository's CLI / `clickup_work` MCP | Creates a GitHub target before each subtask, records backlinks, mirrors progress, reconciles discussion snapshots, gates completion | Local-helper mode only: install it with `onboard --mode local-helper`, sign in to `gh` and the selected ClickUp runtime; bind the project |
+| Host ClickUp + GitHub MCPs | Agents perform the same workflow with available service tools | Default. Authorize the official ClickUp MCP in the agent; use `gh` or an approved hosted GitHub connection; load the shared skills |
 | Native ClickUp GitHub connection | Associates GitHub activity with tasks outside an agent session | Workspace/repository administrator setup below |
 | Native GitHub Automations | Runs selected task/issue actions on configured events | Optional ClickUp plan feature below |
 
@@ -69,19 +69,20 @@ instructions][automations] for available triggers/actions and conditions.
 
 ## Use the workflow tools
 
-Run commands from a bound worktree with each teammate's own authentication.
+These commands apply in local-helper mode only. Run them from a bound worktree with
+each teammate's own authentication. `TEMP_DIR` stands for a temporary folder outside the repository (`$TMPDIR` on macOS and Linux, `%TEMP%` on Windows).
 The helper executes GitHub operations through `gh`, even when called through
 our MCP. Host GitHub MCP calls are a separate agent-driven path.
 
 ```bash
 # Default: create/reuse an issue, then a child with the issue URL already present.
 cu-work --project-dir /absolute/project subtask --task 86native \
-  --title 'Validate response' --description-file /tmp/acceptance.md \
+  --title 'Validate response' --description-file TEMP_DIR/acceptance.md \
   --key '86native:validate:v1'
 
 # Reuse an existing issue or PR; no additional issue is created.
 cu-work --project-dir /absolute/project subtask --task 86native \
-  --title 'Test edge cases' --description-file /tmp/acceptance.md \
+  --title 'Test edge cases' --description-file TEMP_DIR/acceptance.md \
   --github-target https://github.com/OWNER/REPO/issues/42 --key '86native:edges:v1'
 
 # Associate an existing task, or use --target new-issue --title '...' to create one.
@@ -93,7 +94,7 @@ cu-work --project-dir /absolute/project link-pr --task 86child --pr 43 --key '86
 
 # Linked progress is posted on ClickUp and associated issue/PR discussions.
 cu-work --project-dir /absolute/project progress --task 86child \
-  --message-file /tmp/progress.md --key '86child:tests:v1'
+  --message-file TEMP_DIR/progress.md --key '86child:tests:v1'
 
 # Import human discussion snapshots from either side; repeat safely.
 cu-work --project-dir /absolute/project sync-comments --task 86child
@@ -127,7 +128,7 @@ silently create or redirect work to a different repository.
 
 ## Use host MCPs directly
 
-For **OAuth-only onboarding**, use
+With **hosted ClickUp** (the default), use
 [the fail-closed host issue-first protocol](../../skills/clickup-github/references/official-mcp-issue-first.md)
 *before any write*. Hosted official ClickUp OAuth does not authenticate the
 separate local `cup` CLI or provide helper receipts/locks. When the agent

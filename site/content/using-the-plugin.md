@@ -15,7 +15,7 @@ You do not need to remember `cu-work` commands, MCP tool names, or synchronizati
   The agent re-reads scope, searches complete history for duplicates, verifies
   a GitHub target before creating a subtask, and stops on uncertain writes.
   These checks are agent-enforced; there is no local `clickup_work` journal.
-- **Optional full local helper:** If you deliberately installed
+- **Optional local helper:** If you deliberately installed
   `onboard --mode local-helper`, authenticated Krodak's `cup`, and bound this project,
   your agent may use `clickup_work` for helper-enforced scope and durable
   receipts. The two authentication methods are separate.

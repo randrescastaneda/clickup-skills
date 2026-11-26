@@ -219,7 +219,7 @@ parts have been tested. Configuration checks do not prove installed-client behav
 
 ## Bind each working project
 
-**OAuth-first installation:** The agent uses the official ClickUp MCP to verify the project scope, then writes the approved `.clickup/project.json` locally. No `cu-work` binary, personal token or helper journal is needed. Ask your agent:
+**Hosted ClickUp (default):** The agent uses the official ClickUp MCP to verify the project scope, then writes the approved `.clickup/project.json` locally. No `cu-work` binary, personal token or helper journal is needed. Ask your agent:
 
 ```prompt
 Bind this working repository to ClickUp Skills. Verify its GitHub origin and
@@ -305,21 +305,21 @@ are not proxied or journaled by `cu-work`. See [the execution contract](docs/con
 
 **With hosted ClickUp, ask the coding agent in plain language** to read the approved task, verify GitHub targets before new subtasks, record progress and link PR evidence. The agent follows the [guarded issue-first protocol](skills/clickup-github/references/official-mcp-issue-first.md), but does not have the local helper's durable receipts or worker.
 
-**Advanced local-helper mode (`--mode local-helper`)** — only here do the `cu-work` commands below apply:
+**Advanced local-helper mode (`--mode local-helper`)** — only here do the `cu-work` commands below apply. Setup writes a `cu-work` launcher into `~/.local/share/clickup-skills/bin`; add that folder to PATH. `TEMP_DIR` stands for a temporary folder outside the repository (`$TMPDIR` on macOS and Linux, `%TEMP%` on Windows).
 
 ```bash
 cu-work --project-dir /absolute/project focus --task 86native
 cu-work --project-dir /absolute/project subtask --task 86native \
-  --title 'Validate input data' --description-file /tmp/subtask.md --key '86native:validate:v1'
+  --title 'Validate input data' --description-file TEMP_DIR/subtask.md --key '86native:validate:v1'
 cu-work --project-dir /absolute/project progress --task 86native \
-  --message-file /tmp/progress.md --key '86native:validation-passed:v1'
+  --message-file TEMP_DIR/progress.md --key '86native:validation-passed:v1'
 # Create the PR with gh or GitHub MCP first, then:
 cu-work --project-dir /absolute/project link-pr --task 86native --pr 42 --key '86native:pr42:link:v1'
 cu-work --project-dir /absolute/project sync-comments --task 86native
 cu-work --project-dir /absolute/project phase --task 86native --phase review --key '86native:review:v1'
 # After acceptance, merge, and CI verification:
 cu-work --project-dir /absolute/project phase --task 86native --phase done --pr 42 \
-  --verification-file /tmp/verification.md --key '86native:pr42:done:v1'
+  --verification-file TEMP_DIR/verification.md --key '86native:pr42:done:v1'
 ```
 
 Reuse a key only for identical inputs. New progress needs a new key. Multiline

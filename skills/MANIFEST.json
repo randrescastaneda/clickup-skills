@@ -15,7 +15,7 @@
     "clickup-github": {
       "SKILL.md": "c697b4aaf21f0e35ec4c6fe87ddee0dded150c02c40e9aabf5b4c31719ca00fd",
       "agents/openai.yaml": "11ab9a5651558c6d832edb3b493fd3d7000a05768230aa1ee13bfdc102e3d12f",
-      "references/official-mcp-issue-first.md": "98fe70de0479eaf749101d23effef53e074178c57cce7562f0552663ccc7979d",
+      "references/official-mcp-issue-first.md": "69a51d71789bedcd99a15d4a48f612082b96390af932b1aec33fc0b968c34a22",
       "references/synchronization.md": "3aedfb376716688003f1d4bd36b3df92cf0a4d256060efd6b73fd3484bd74668"
     },
     "clickup-handoff": {
@@ -29,7 +29,7 @@
     "clickup-setup": {
       "SKILL.md": "a7143d0b55a7b224c46322f52c25a3a711a0d9d79231a472a1e8d39c4fb44af6",
       "agents/openai.yaml": "71a0fd085c9b4a0c95a9de043a037847f5a355b7dca1ceed2a2d7cdc73adda70",
-      "references/manual-install.md": "e286f0fc1e4fe1489d8ed8cc32017796f11bab39e5b9980e9e6a64abe2324785"
+      "references/manual-install.md": "9c96c97844bb0a869055d1bc0b5d76124b278eb893fea7cb97740ecaa75b13d8"
     },
     "clickup-work-task": {
       "SKILL.md": "bcc6fb2320a4f15ce8ab690bc0b9fe3cbe69a4c4ebc96564b4f6aa9d8cc03e41",

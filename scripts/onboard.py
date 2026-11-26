@@ -124,10 +124,10 @@ def run_onboarding(runtime: Path | None, *, mode: str = "hosted", github: str | 
     github_cli = "not-selected" if github == "hosted" else "authenticated"
     if mode == "local-helper":
         if runtime is None:
-            raise ValueError("The full helper requires an installed runtime.")
+            raise ValueError("Local-helper mode requires an installed runtime.")
         metadata_path = runtime / "runtime.json"
         if not metadata_path.is_file():
-            raise ValueError("The installed runtime is missing. Rerun onboard --mode cli.")
+            raise ValueError("The installed runtime is missing. Rerun onboard --mode local-helper.")
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         cup_command = metadata.get("cup_command")
         if not isinstance(cup_command, list) or not cup_command or not all(
@@ -165,7 +165,7 @@ def run_onboarding(runtime: Path | None, *, mode: str = "hosted", github: str | 
         print("Missing or banned ClickUp MCP: STOP. Do not install cup, cu-work, a local helper, or mcp-remote as fallback.")
         print("Never route a failed or uncertain host write through the unauthenticated local helper.")
     else:
-        print("\nTerminal setup complete: full local helper, skills, MCP configuration, and CLI sign-ins verified.")
+        print("\nTerminal setup complete: local helper, skills, MCP configuration, and CLI sign-ins verified.")
         print("Restart/reload your coding agent to verify actual MCP and skill discovery.")
         print("The hosted GitHub MCP may request separate OAuth authorization.")
         print("Local helper safeguards depend on a verified project binding.")

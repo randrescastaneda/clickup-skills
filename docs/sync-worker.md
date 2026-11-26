@@ -29,13 +29,14 @@ to-clickup` or `--direction to-github` to restrict copying. The JSON report show
 counts and task IDs without source comment bodies. Preview creates no operation
 receipts, health record, or remote writes. It still needs authenticated reads.
 
-For a managed npx installation, use the installed runtime's persistent Python
-and `scripts/run_work.py` paths shown in the client's `clickup_work` command;
-replace its final `mcp` argument with the command above. The Python invocation
-keeps `-I`. `npx --yes github:randrescastaneda/clickup-skills work --project-dir
-/absolute/project sync-worker --task 86native` also supports a manual preview.
-Use persistent paths for the running service so it does not fetch new code when
-restarted. No dependency installs or updates run inside the polling loop.
+A managed local-helper installation writes a `cu-work` launcher (`cu-work.cmd` on
+Windows) into `CLICKUP_SKILLS_HOME/bin`, by default `~/.local/share/clickup-skills/bin`.
+Add that folder to PATH, or call the launcher by its full path. Setup and update
+rewrite it to point at the current runtime, so a running service picks up a new
+runtime only when it is restarted. `npx --yes github:randrescastaneda/clickup-skills
+work --project-dir /absolute/project sync-worker --task 86native` also supports a
+manual preview, but do not use it for the running service: it can fetch new code
+when restarted. No dependency installs or updates run inside the polling loop.
 
 ## Run a bounded pass or keep polling
 

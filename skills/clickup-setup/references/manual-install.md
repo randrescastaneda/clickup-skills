@@ -17,9 +17,9 @@ You are a coding agent asked to install ClickUp Skills. Follow these steps in or
 | Client | none: ask | Kilo Code, Codex, Claude Code, Copilot CLI or VS Code Copilot Chat |
 | Scope | user | Project scope needs the absolute path of an existing project folder. VS Code Copilot Chat is project scope only. |
 | GitHub backend | `gh` | An approved hosted GitHub connection only if the user says so |
-| Version | the latest release tag | Use `main` only if no tag exists, and say so in the report |
+| Version | the latest release tag | Use `main` only if no tag exists. If the user names a branch or commit, use that instead. Say which in the report |
 
-Find the latest tag with `git ls-remote --tags https://github.com/randrescastaneda/clickup-skills`, or at `https://github.com/randrescastaneda/clickup-skills/releases/latest`. Below, `TAG` is that tag (or `main`).
+Find the latest tag with `git ls-remote --tags https://github.com/randrescastaneda/clickup-skills`, or at `https://github.com/randrescastaneda/clickup-skills/releases/latest`. Below, `TAG` is that tag (or `main`, or the branch or commit the user named; for a branch, the archive URL is `.../archive/refs/heads/BRANCH.zip`).
 
 ## 3. Get the source
 

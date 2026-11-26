@@ -156,5 +156,5 @@ test** is read-only: honor the user-approved scope and write budget.
 Report verified identities/scope, source URLs, target issue-before-child
 evidence, exact read/write count (when observed), child ID, matching markers,
 body preservation, guarded repeat result, and any unverified protections.
-Use precise labels: **agent-guarded** (OAuth path) versus **helper-enforced**
+Use precise labels: **agent-guarded** (hosted path) versus **helper-enforced**
 (local `clickup_work` with valid project binding and personal token).
