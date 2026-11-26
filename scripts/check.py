@@ -28,6 +28,20 @@ for file in (ROOT / "skills").glob("*/SKILL.md"):
     assert "[TODO" not in text, file
     assert (file.parent / "agents/openai.yaml").is_file(), file
     assert re.search(r"^license: MIT$", front, re.M), file
+    name = re.search(r"^name: (.+)$", front, re.M)[1]
+    assert re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) and len(name) <= 64, file
+    assert len(re.search(r"^description: (.+)$", front, re.M)[1]) <= 1024, file
+    compatibility = re.search(r"^compatibility: (.+)$", front, re.M)
+    assert compatibility and len(compatibility[1]) <= 500, file
+    assert len(text.splitlines()) <= 200, file
+# The five workflow skills open with the same selection check, byte for byte.
+WORKFLOW = ("clickup-bind-project", "clickup-route", "clickup-work-task", "clickup-github", "clickup-handoff")
+blocks = {re.search(r"<!-- selection-check:start -->.*?<!-- selection-check:end -->",
+                    (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8"), re.S)[0] for name in WORKFLOW}
+assert len(blocks) == 1, "The selection-check block differs between workflow skills"
+RETIRED = re.compile(r"full[- ]helper|oauth host-agent|oauth mode|oauth-only", re.I)
+for file in (ROOT / "skills").rglob("*.md"):
+    assert not RETIRED.search(file.read_text(encoding="utf-8")), ("Retired mode term", file)
 # Installed skills are copied without the rest of the repository: relative links
 # must stay inside skills/, and every other link must be absolute HTTPS.
 for file in (ROOT / "skills").rglob("*.md"):
@@ -48,6 +62,8 @@ versions = {json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["ver
 spec = importlib.util.spec_from_file_location("metadata", ROOT / "scripts/build_metadata.py")
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+for path, source in module.BUNDLED.items():
+    assert (ROOT / path).read_bytes() == (ROOT / source).read_bytes(), path + " differs from " + source
 assert versions == {module.VERSION}, "Version differs between package.json, pyproject.toml and build_metadata.py"
 with tempfile.TemporaryDirectory() as temporary:
     module.ROOT = Path(temporary)
