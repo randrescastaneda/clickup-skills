@@ -17,6 +17,7 @@ CLIENT_CHOICES = (
     ("3", "claude", "Claude Code"),
     ("4", "copilot", "GitHub Copilot"),
 )
+VALID_CLIENTS = "kilo, codex, claude, copilot, vscode (vscode also needs --project-dir)"
 
 
 def choose_client(interactive: bool | None = None, prompt=input) -> str:
@@ -24,8 +25,8 @@ def choose_client(interactive: bool | None = None, prompt=input) -> str:
     if interactive is None:
         interactive = sys.stdin.isatty()
     if not interactive:
-        print("No interactive terminal detected; using Kilo Code. Pass --client to choose another agent.")
-        return "kilo"
+        # An agent installing for another client must never get Kilo by accident.
+        raise ValueError("No interactive terminal: pass --client with one of " + VALID_CLIENTS + ". Nothing was changed.")
     print("\nWhich coding agent are you installing for?")
     for number, _, label in CLIENT_CHOICES:
         print(f"  {number}. {label}{' (default)' if number == '1' else ''}")
@@ -103,9 +104,24 @@ def resolve_backends(mode: str | None = None, github: str | None = None) -> tupl
     return mode, github
 
 
-def run_onboarding(runtime: Path | None, *, mode: str = "hosted", github: str | None = None) -> None:
-    """Finish CLI or hosted-MCP setup without exchanging credentials between them."""
+def github_cli_state(gh_path: str | None = None) -> str:
+    """Read-only: missing, authenticated or unauthenticated. Never signs in."""
+    gh = gh_path or shutil.which("gh")
+    if not gh:
+        return "missing"
+    status = [gh, "auth", "status", "--hostname", "github.com"]
+    result = subprocess.run(status, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return "authenticated" if result.returncode == 0 else "unauthenticated"
+
+
+def run_onboarding(runtime: Path | None, *, mode: str = "hosted", github: str | None = None) -> str:
+    """Finish CLI or hosted-MCP setup without exchanging credentials between them.
+
+    Returns the state of the GitHub CLI: authenticated, unauthenticated, missing
+    or not-selected. Only a hosted install may finish with gh still pending.
+    """
     mode, github = resolve_backends(mode, github)
+    github_cli = "not-selected" if github == "hosted" else "authenticated"
     if mode == "local-helper":
         if runtime is None:
             raise ValueError("The full helper requires an installed runtime.")
@@ -122,12 +138,24 @@ def run_onboarding(runtime: Path | None, *, mode: str = "hosted", github: str | 
         authenticate_github()
     if mode in ("hosted", "remote-only"):
         if github == "cli":
-            authenticate_github()
+            # The skills and settings are already written. A gh that is not ready
+            # leaves the install complete with an action pending; never switch backend.
+            try:
+                authenticate_github()
+            except (ValueError, subprocess.CalledProcessError):
+                github_cli = "missing" if not shutil.which("gh") else "unauthenticated"
         print("\nTerminal setup complete: official ClickUp MCP configured; ClickUp OAuth still needs verification.")
         print("ClickUp OAuth is NOT authenticated or verified by this terminal command.")
         print("Restart/reload the agent, authorize clickup_official using its browser OAuth prompt,")
         print("and verify read-only Workspace/task access and discovered schemas.")
         print("This mode uses agent-directed host tools, NOT the helper's durable journal or scope enforcement.")
+        if github == "cli" and github_cli != "authenticated":
+            print("\nInstallation complete. The selected GitHub backend (gh) still needs your action:")
+            if github_cli == "missing":
+                print("  install GitHub CLI from https://cli.github.com/, then run: gh auth login")
+            else:
+                print("  run: gh auth login")
+            print("The GitHub backend was NOT switched. Rerun the same onboard command afterwards, or verify gh in the agent.")
         if github == "cli":
             print("GitHub: reuse the verified gh sign-in across authorized repositories; verify each target repository in the agent.")
             print("No GitHub MCP or manually created repository-specific token is required for this selected backend.")
@@ -143,3 +171,4 @@ def run_onboarding(runtime: Path | None, *, mode: str = "hosted", github: str | 
         print("Local helper safeguards depend on a verified project binding.")
     print("ClickUp's native GitHub integration handles configured links/activity; agent GitHub access is separate.")
     print("No native connection, automation, repository permission or Workspace access is enabled here.")
+    return github_cli

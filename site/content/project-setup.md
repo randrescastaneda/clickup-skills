@@ -34,7 +34,7 @@ Replace every placeholder. The agent should ask only for missing essentials and 
 
 ## What the agent records
 
-The tracked `.clickup/project.json` holds objective, IDs, repository/base, routing policy, and the exact status mapping. **Default OAuth mode:** the agent can prepare this local file after verifying the objective and IDs with the official MCP; it does **not** call `cu-work` or write helper receipts. **Optional token-backed helper mode:** `cu-work init` creates the file locally without remote task writes and refuses to overwrite an existing binding. Review any existing binding before changing scope.
+The tracked `.clickup/project.json` holds objective, IDs, repository/base, routing policy, and the exact status mapping. **Default hosted ClickUp:** the agent can prepare this local file after verifying the objective and IDs with the official MCP; it does **not** call `cu-work` or write helper receipts. **Optional local-helper mode:** `cu-work init` creates the file locally without remote task writes and refuses to overwrite an existing binding. Review any existing binding before changing scope.
 
 Commit it only if its identifiers and objective are suitable for the repository’s audience. Keep credentials in each teammate’s private authentication or environment. Local focus and operation receipts live in Git worktree state, outside tracked project files.
 

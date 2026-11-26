@@ -12,7 +12,7 @@ compatibility: Requires the official ClickUp MCP authorized in the agent, or the
 
 The user selects the ClickUp mode and the GitHub backend at setup, independently of each other. Do not infer the selection from the tools that happen to be listed.
 
-1. If the user, the project instructions or the setup report state the selection, use it.
+1. If the user, the project instructions or the setup report state the selection, use it. With a shell and the plugin source, `python3 scripts/setup.py status --client CLIENT` prints the recorded selection and changes nothing.
 2. If nothing states it, assume the default, **hosted** ClickUp (official OAuth MCP, `https://mcp.clickup.com/mcp`) with **`gh`** for GitHub, and confirm it with the user before the first write.
 3. The **hosted** GitHub backend (an approved hosted GitHub connection instead of `gh`) applies only when the user selected it.
 4. **remote-only** permits hosted connections only: never `gh`, never a local ClickUp tool.

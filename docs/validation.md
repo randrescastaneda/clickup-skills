@@ -1,5 +1,20 @@
 # Validation and rollout
 
+## Installation routes without Node — 26 November 2026
+
+What was checked for each route added on branch `feat/agent-install-paths`, with the
+label that applies. Nothing here was live-verified: the only live-verified client
+remains Kilo VS Code 7.8.18 on macOS (hosted ClickUp + `gh`, 5 November 2026).
+
+| Route | What was checked | Label |
+| --- | --- | --- |
+| A. Agent-run manual install (`INSTALL.md`) | The per-client folders, settings files and snippets are generated from `clients.py` and the `remote-only` profile, and compared with `setup.py`; `skills/MANIFEST.json` hashes are regenerated and compared on every check. Steps 4 to 7 were walked by hand for Claude Code from a local source into a temporary home: 22 files matched the manifest, and `setup.py status` then saw six identical copies and one `clickup_official`. No agent has yet run the whole runbook, and the download options were not run. | offline-tested (generated content, steps 4 to 7); procedure untested by an agent |
+| B. `gh skill install` | `gh` 2.95.0 on macOS installed all six skills from a local folder into a temporary home for `kilo`, `codex`, `claude-code` and `github-copilot`, and into a `--dir` folder, including each skill's `assets/` and `references/` files. It placed Kilo in `~/.kilocode/skills` and Codex in `~/.codex/skills`, so the docs use `--dir` for those two. Installing from GitHub was not run. | offline-tested (local source only) |
+| C. `python3 scripts/setup.py onboard` | Subprocess tests with an empty `PATH` (no Node, npm or `gh`): exit 3 and `RESULT` `action-needed` for the default `gh` backend, exit 0 and `ready` for the hosted-GitHub selections; six skills and one `clickup_official` entry in each case. `status` writes nothing. Without `--client` and a terminal, it stops before writing. | offline-tested |
+| D. Claude Code plugin | Manifests unchanged since PR #26; commands from Claude Code's documentation. Copilot CLI's `copilot plugin install` from GitHub's documentation. Codex: not documented (format unconfirmed). | from vendor documentation, untested |
+| Native MCP commands (`claude mcp add`, `codex mcp add`) | Syntax from vendor documentation | from vendor documentation, untested |
+| E. npx | Unchanged | as before |
+
 ## Independent backends — 5 November 2026
 
 Current default onboarding selects **hosted ClickUp + GitHub CLI**. ClickUp stays

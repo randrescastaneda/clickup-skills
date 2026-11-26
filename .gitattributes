@@ -1,0 +1,11 @@
+# LF everywhere, so skills/MANIFEST.json hashes match in a Windows clone.
+*.md    text eol=lf
+*.json  text eol=lf
+*.jsonc text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.py    text eol=lf
+*.toml  text eol=lf
+*.mjs   text eol=lf
+*.cjs   text eol=lf
+LICENSE text eol=lf

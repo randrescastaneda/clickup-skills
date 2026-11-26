@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 from clickup_skills.clients import render_config, skill_directory
-from install_skills import install
+from install_skills import digest, install
 
 CLIENTS = ("kilo", "codex", "claude", "copilot", "vscode")
 SOURCE_ITEMS = ("src", "scripts/run_work.py", "skills", "profiles", "LICENSE", "THIRD_PARTY_NOTICES.md", "third_party")
@@ -413,6 +413,12 @@ def setup_host(args, home):
     aliases = [name for name, server in config[key].items() if isinstance(server, dict)
                and server.get("url") == "https://mcp.clickup.com/mcp"]
     print("Official ClickUp MCP server name: " + (", ".join(aliases) if aliases else "(not found; check configuration)"))
+    previous_github = receipt.get("servers", {}).get("github")
+    if (args.client == "kilo" and github_backend == "cli" and isinstance(owned.get("github"), dict)
+            and owned["github"].get("enabled") is False
+            and not (isinstance(previous_github, dict) and previous_github.get("enabled") is False)):
+        print("Disabled the unchanged GitHub MCP entry this installer added earlier: Kilo cannot authorize it, "
+              "and the selected GitHub backend is gh. Re-enable it in Kilo's MCP settings if you need it.")
     if args.client == "kilo" and github_backend == "hosted":
         github = config[key].get("github")
         if isinstance(github, dict) and github.get("url") == GITHUB_REMOTE_URL:
@@ -427,6 +433,77 @@ def setup_host(args, home):
         print("An existing local clickup_work server was preserved. Do not use it for hosted ClickUp; it does NOT share hosted OAuth.")
     print("Reload the agent; authorize the official ClickUp MCP in its browser OAuth flow if prompted.")
     print("Only the running agent can verify its hosted OAuth, tools, account, workspace and task scope.")
+    return {"skills_dir": str(skills), "config": str(destination), "server": aliases[0] if aliases else None}
+
+
+def report_result(options, info, github_cli):
+    """Print one machine-readable line for agents. No secrets and no settings content."""
+    ready = github_cli in ("authenticated", "not-selected")
+    server = info.get("server") or "clickup_official"
+    steps = []
+    if github_cli == "missing":
+        steps.append("Install GitHub CLI from https://cli.github.com/, then run: gh auth login")
+    elif github_cli == "unauthenticated":
+        steps.append("Run: gh auth login")
+    steps.append(("Run Developer: Reload Window in VS Code" if options.client == "kilo" else "Reload the agent")
+                 + ", then authorize " + server + " in its browser OAuth flow")
+    if options.github == "hosted":
+        steps.append("Verify the approved hosted GitHub connection in the agent; stop if it is unavailable")
+    steps.append("Ask the agent to verify the installation read-only with the clickup-setup skill")
+    result = {"status": "ready" if ready else "action-needed", "client": options.client, "mode": options.mode,
+              "github": options.github, "skills_dir": info.get("skills_dir"), "config": info.get("config"),
+              "server": info.get("server"), "github_cli": github_cli, "next": steps}
+    print("RESULT " + json.dumps(result, separators=(",", ":")), flush=True)
+    return result["status"]
+
+
+def skill_states(skills):
+    """Classify each shipped skill in a client folder without changing anything."""
+    states = {}
+    for source in sorted((ROOT / "skills").iterdir()):
+        if not (source / "SKILL.md").is_file():
+            continue
+        target = skills / source.name
+        receipt = read_json(target / ".clickup-skills.json", None) if target.is_dir() else None
+        if target.is_symlink():
+            state = "symlink"
+        elif not target.is_dir():
+            state = "missing"
+        elif isinstance(receipt, dict) and receipt.get("package") == "clickup-skills":
+            state = "managed" if digest(target) == receipt.get("digest") else "managed-modified"
+        else:
+            state = "unmanaged-identical" if digest(target) == digest(source) else "unmanaged-different"
+        states[source.name] = state
+    return states
+
+
+def status(args, home):
+    """Read-only report of what is installed for one client. Writes nothing."""
+    from onboard import github_cli_state
+    project = args.project_dir.resolve() if args.project_dir else None
+    destination = config_destination(args.client, project).resolve()
+    skills = skill_directory("copilot" if args.client == "vscode" else args.client, project_dir=project)
+    key = {"kilo": "mcp", "codex": "mcp_servers", "vscode": "servers"}.get(args.client, "mcpServers")
+    aliases, problem = [], None
+    if destination.is_file():
+        try:
+            text = destination.read_text(encoding="utf-8")
+            config = tomllib.loads(text) if args.client == "codex" else json.loads(jsonc_text(text))
+            aliases = [name for name, server in (config.get(key) or {}).items()
+                       if isinstance(server, dict) and server.get("url") == OFFICIAL_CLICKUP_URL]
+        except (ValueError, AttributeError, tomllib.TOMLDecodeError):
+            problem = "The settings file could not be parsed."
+    receipt = read_json(home / "clients" / (hashlib.sha256(str(destination).encode()).hexdigest() + ".json"), {}) or {}
+    installed = read_json(home / "installation.json", {}) or {}
+    runtime = Path(installed["runtime"]) if installed.get("runtime") else None
+    gh = github_cli_state()
+    report = {"client": args.client, "skills_dir": str(skills), "skills": skill_states(skills),
+              "config": str(destination), "config_exists": destination.is_file(), "config_problem": problem,
+              "official_servers": aliases,
+              "recorded_selection": {"mode": receipt["mode"], "github": receipt["github"]} if "mode" in receipt else None,
+              "gh": {"present": gh != "missing", "authenticated": gh == "authenticated"},
+              "helper_runtime": bool(runtime and (runtime / "runtime.json").is_file())}
+    print(json.dumps(report, indent=2))
 
 
 def main():
@@ -439,8 +516,9 @@ def main():
         runtime = Path(installed["runtime"])
         command = [str(runtime_python(runtime)), "-I", str(runtime / "scripts/run_work.py")]
         raise SystemExit(subprocess.call(command + (["--cup"] if args[0] == "cup" else []) + args[1:]))
-    parser = argparse.ArgumentParser(description=__doc__, epilog="Also: cup <arguments> or work <cu-work arguments> after setup.")
-    parser.add_argument("command", choices=["setup", "update", "onboard"])
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Also: cup <arguments> or work <cu-work arguments> after setup. "
+                                     "status --client CLIENT prints what is installed and writes nothing.")
+    parser.add_argument("command", choices=["setup", "update", "onboard", "status"])
     parser.add_argument("--client", choices=CLIENTS)
     parser.add_argument("--mode", choices=["hosted", "remote-only", "local-helper", "oauth", "cli"],
                         help="ClickUp mode: hosted (default), strict remote-only, or local-helper. oauth/cli are legacy aliases.")
@@ -452,6 +530,11 @@ def main():
     options = parser.parse_args(args)
     if options.command != "onboard" and (options.mode is not None or options.github is not None):
         parser.error("--mode and --github are supported only for onboard; setup/update retain their existing CLI behavior.")
+    if options.command == "status":
+        if options.client is None:
+            parser.error("--client is required for status.")
+        status(options, home)
+        return
     if options.client is None:
         if options.command == "onboard":
             from onboard import choose_client
@@ -462,8 +545,11 @@ def main():
         from onboard import resolve_backends, run_onboarding
         options.mode, options.github = resolve_backends(options.mode, options.github)
         if options.mode in ("hosted", "remote-only"):
-            setup_host(options, home)
-            run_onboarding(None, mode=options.mode, github=options.github)
+            info = setup_host(options, home)
+            github_cli = run_onboarding(None, mode=options.mode, github=options.github)
+            # Installed, with the selected GitHub backend still pending: a distinct exit code, not a failure.
+            if report_result(options, info, github_cli) == "action-needed":
+                raise SystemExit(3)
         else:
             setup(options, home)
             active = read_json(home / "installation.json", {})

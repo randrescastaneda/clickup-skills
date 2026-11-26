@@ -6,10 +6,15 @@ import json
 from pathlib import Path
 import shutil
 import sys
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from clickup_skills.clients import SKILL_PATHS, skill_directory
+
+# Recorded in each receipt; older receipts without it stay valid.
+PYPROJECT = ROOT / "pyproject.toml"
+VERSION = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["project"]["version"] if PYPROJECT.is_file() else None
 
 
 def digest(directory):
@@ -52,7 +57,7 @@ def install(destination, method="copy", update=False, dry_run=False):
                 shutil.rmtree(target)
             shutil.copytree(source, target)
             shutil.copyfile(ROOT / "LICENSE", target / "LICENSE")
-            (target / ".clickup-skills.json").write_text(json.dumps({"package": "clickup-skills", "digest": digest(source)}), encoding="utf-8")
+            (target / ".clickup-skills.json").write_text(json.dumps({"package": "clickup-skills", "version": VERSION, "digest": digest(source)}), encoding="utf-8")
         elif action == "link":
             try:
                 target.symlink_to(source, target_is_directory=True)

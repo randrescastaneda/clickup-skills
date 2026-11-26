@@ -21,8 +21,14 @@ def completed(exit_code: int) -> subprocess.CompletedProcess:
 
 class ChooseClientTests(unittest.TestCase):
     def test_kilo_is_default(self):
+        # Enter selects Kilo only in a terminal.
         self.assertEqual(onboard.choose_client(interactive=True, prompt=lambda _: ""), "kilo")
-        self.assertEqual(onboard.choose_client(interactive=False), "kilo")
+
+    def test_no_terminal_without_client_is_an_error_listing_clients(self):
+        with self.assertRaises(ValueError) as caught:
+            onboard.choose_client(interactive=False)
+        for client in ("kilo", "codex", "claude", "copilot", "vscode"):
+            self.assertIn(client, str(caught.exception))
 
     def test_all_supported_choices(self):
         for selected, expected in (("1", "kilo"), ("2", "codex"), ("3", "claude"),
@@ -141,6 +147,28 @@ class OrchestrationTests(unittest.TestCase):
                     onboard.run_onboarding(None, mode=mode, github=github)
                 cup.assert_not_called()
                 gh.assert_not_called()
+
+    def test_hosted_install_reports_unready_gh_instead_of_failing(self):
+        for which, expected in ((None, "missing"), ("/opt/bin/gh", "unauthenticated")):
+            with self.subTest(expected=expected), \
+                 patch.object(onboard, "authenticate_github", side_effect=ValueError("not ready")), \
+                 patch.object(onboard.shutil, "which", return_value=which):
+                self.assertEqual(onboard.run_onboarding(None, mode="hosted", github="cli"), expected)
+
+    def test_hosted_states_for_ready_and_unselected_gh(self):
+        with patch.object(onboard, "authenticate_github") as gh:
+            self.assertEqual(onboard.run_onboarding(None, mode="hosted"), "authenticated")
+            self.assertEqual(onboard.run_onboarding(None, mode="hosted", github="hosted"), "not-selected")
+            self.assertEqual(onboard.run_onboarding(None, mode="remote-only"), "not-selected")
+        gh.assert_called_once_with()
+
+    def test_local_helper_keeps_failing_when_gh_is_not_ready(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "runtime.json").write_text(json.dumps({"cup_command": ["node", "cup.js"]}), encoding="utf-8")
+            with patch.object(onboard, "authenticate_clickup"), \
+                 patch.object(onboard, "authenticate_github", side_effect=ValueError("gh missing")):
+                with self.assertRaisesRegex(ValueError, "gh missing"):
+                    onboard.run_onboarding(Path(tmp), mode="local-helper")
 
     def test_cli_mode_fails_when_runtime_missing(self):
         with self.assertRaisesRegex(ValueError, "requires an installed runtime"):

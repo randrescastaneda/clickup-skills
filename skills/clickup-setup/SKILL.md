@@ -39,13 +39,15 @@ Pick the first route the machine supports. Always pass the client explicitly: `C
 
 | Route | Needs | Command |
 | --- | --- | --- |
-| A. Agent-run manual install | A way to fetch files | Follow [INSTALL.md](https://github.com/randrescastaneda/clickup-skills/blob/main/INSTALL.md) step by step |
-| B. GitHub CLI (preview) | `gh` 2.90+ | `gh skill install randrescastaneda/clickup-skills --all --agent AGENT --scope user`, then register the MCP as in route A or with route C plus `--skip-skills` |
+| A. Agent-run manual install | A way to fetch files | Follow [`references/manual-install.md`](references/manual-install.md) step by step (the same text as `INSTALL.md`) |
+| B. GitHub CLI (preview) | `gh` 2.90+ | `gh skill install randrescastaneda/clickup-skills --all` with the target below, then register the MCP as in route A, or with route C plus `--skip-skills` |
 | C. Python only | Python 3.11+ and a clone or ZIP | `python3 scripts/setup.py onboard --client CLIENT` (Windows: `py -3 scripts\setup.py onboard --client CLIENT`) |
 | D. Claude Code plugin | Claude Code and git | `claude plugin marketplace add randrescastaneda/clickup-skills`, then `claude plugin install clickup-skills@clickup-skills-marketplace` |
 | E. npx | Node 22+ and Python 3.11+ | `npx --yes github:randrescastaneda/clickup-skills onboard --client CLIENT` |
 
-Routes C and E take the flags from section 2 and `--project-dir /absolute/project` for project scope. Use `--skip-skills` when another installer (`gh skill`, `npx skills`) owns the skill copies. `setup` and `update` remain local-helper commands.
+Route B targets: `--agent claude-code --scope user`, `--agent github-copilot --scope user`, `--dir "$HOME/.kilo/skills"` for Kilo and `--dir "$HOME/.agents/skills"` for Codex. `gh` 2.95 puts `--agent kilo` and `--agent codex` in other folders. Update with `gh skill update --all`, adding the same `--dir`.
+
+Routes C and E take the flags from section 2 and `--project-dir /absolute/project` for project scope. They end with one `RESULT {...}` line of JSON: `status` is `ready` or `action-needed`, and `next` lists what the user still has to do. Exit code 3 means installed, with the selected GitHub backend (`gh`) still needing the user; it is not a failure, and the backend was not switched. Use `--skip-skills` when another installer (`gh skill`, `npx skills`) owns the skill copies. `setup` and `update` remain local-helper commands.
 
 - Use one route per machine. Two installers must never manage the same skill folder, and Claude Code plugin skills are namespaced, so a second copy in `~/.claude/skills` appears twice.
 - The installer validates an existing official-server entry under another name before reusing it, reuses that name, and refuses duplicates. Do the same by hand in route A.
@@ -53,6 +55,8 @@ Routes C and E take the flags from section 2 and `--project-dir /absolute/projec
 - One `gh` sign-in serves every authorized repository. Do not create a token per repository.
 
 ## 4. Verify after any route
+
+With Python and the plugin source, `python3 scripts/setup.py status --client CLIENT [--project-dir DIR]` prints the skills' states, the settings file, the official-server names, the recorded selection and the `gh` sign-in, and changes nothing.
 
 1. Reload the client. On Kilo VS Code, use **Developer: Reload Window** and a fresh task, then compare the skill loader's bodies with the installed files: the observed 7.8.18 backend cached old bodies despite a new task. Do not delete caches or copies speculatively.
 2. Discover the six skills and the real MCP tool schemas.

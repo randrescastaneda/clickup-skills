@@ -1,5 +1,6 @@
 """Validate the built documentation: links, source coverage, snippets and page contracts."""
 
+import html
 from html.parser import HTMLParser
 import json
 from pathlib import Path
@@ -99,6 +100,23 @@ def main():
         assert verification in clients_html, "Missing client verification: " + verification
     assert "not" in clients_html.lower() and "personal API token" in clients_html
     assert "npm install -g " + cup["package"] + "@" + cup["version"] not in installation
+    # Every installation route appears with the same command text in the three install guides.
+    routes = ("https://raw.githubusercontent.com/randrescastaneda/clickup-skills/main/INSTALL.md",
+              "gh skill install randrescastaneda/clickup-skills --all --agent claude-code --scope user",
+              "gh skill install randrescastaneda/clickup-skills --all --agent github-copilot --scope user",
+              '--all --dir "$HOME/.kilo/skills"', '--all --dir "$HOME/.agents/skills"',
+              "python3 scripts/setup.py onboard --client CLIENT",
+              "claude plugin marketplace add randrescastaneda/clickup-skills",
+              "claude plugin install clickup-skills@clickup-skills-marketplace",
+              "npx --yes github:randrescastaneda/clickup-skills onboard --client CLIENT")
+    guides = {"README.md": (ROOT / "README.md").read_text(encoding="utf-8"),
+              "installation.html": html.unescape(installation), "clients.html": html.unescape(clients_html)}
+    for name, text in guides.items():
+        for command in routes:
+            assert command in text, "Missing installation route in " + name + ": " + command
+        assert "Node.js is needed only for the npx route and for local-helper mode" in text, name
+    runbook = (output / "install-runbook.html").read_text(encoding="utf-8")
+    assert "skills/MANIFEST.json" in runbook and "clickup_official" in runbook
     setups = json.loads((output / "client-setups.json").read_text(encoding="utf-8"))
     for client, data in setups.items():
         config = json.loads((ROOT / "profiles" / "remote-only.json").read_text(encoding="utf-8"))

@@ -1,9 +1,9 @@
 ---
 title: Install for your team
-description: One terminal command, then one agent verification. Browser OAuth by default.
+description: Choose a route by what your machine has, with or without Node, then verify in your agent. Browser OAuth by default.
 section: Start here
 ---
-# Install and connect in two actions.
+# Install, then verify in your agent.
 
 ## Choose ClickUp and GitHub independently
 
@@ -13,15 +13,93 @@ Use `onboard --mode hosted --github cli` explicitly for this combination. `--mod
 
 **Local-helper** (`--mode local-helper`, legacy `--mode cli`) separately installs `cup`/`cu-work` and requires its own ClickUp token. Existing `setup`/`update` keep their local-helper semantics. Hosted operations use agent-instruction safeguards, outside helper receipts, locks and completion gates.
 
-The convenience installer runs Node 22+, Python 3.11+ and Git; the default also needs an already allowed GitHub CLI. The strict manual route can use existing hosts with no extra local tools. See [modes and host constraints](modes.html).
+Installation does not need Node: [choose a route](#choose-an-installation-route) by what the machine has. Node 22+ is needed only for the npx route and for local-helper mode, because Krodak's `cup` is an npm package. The default GitHub backend also needs an already allowed GitHub CLI. See [modes and host constraints](modes.html).
 
 ClickUp says it keeps an allowlist of vetted MCP clients for the official server ([ClickUp MCP server](https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server), [ClickUp setup guide, 8 September 2026](https://clickup.com/blog/how-to-use-clickup-mcp-server/)); Kilo, Codex and Copilot CLI are not named on it. If the browser authorization is refused for your client, stop and report it; do not switch to a bridge or a token.
 
 Choose the **coding agent you actually use**, not merely the editor where it runs. The default ClickUp authentication method is **browser-based OAuth**. Each teammate must configure their own agent environment and authorize their own accounts.
 
-## 1. Run one command in your terminal
+## Choose an installation route
 
-Install [Node.js 22+](https://nodejs.org/), Python 3.11+, Git, and GitHub CLI (`gh`) first for the default backend. The same command works in macOS Terminal and Windows PowerShell:
+The route decides how the files arrive. The [selection](#choose-clickup-and-github-independently) decides which backends the agent uses, and every route installs the **hosted** selection unless you choose otherwise. Pick the first row this machine supports. Node.js is needed only for the npx route and for local-helper mode.
+
+| What this machine has | Route | What you run |
+| --- | --- | --- |
+| Only the coding agent, plus one way to fetch files (git, `gh`, curl, PowerShell, a browser download) | **A. Agent-run manual install** | Paste the prompt below into the agent |
+| GitHub CLI 2.90+ | **B. `gh skill`** (preview) | `gh skill install randrescastaneda/clickup-skills --all ...`, then register the MCP |
+| Python 3.11+ and a clone or ZIP | **C. Python only** | `python3 scripts/setup.py onboard --client CLIENT` |
+| Claude Code | **D. The client's plugin manager** | `claude plugin marketplace add randrescastaneda/clickup-skills` |
+| Node 22+ and Python 3.11+ | **E. npx** | `npx --yes github:randrescastaneda/clickup-skills onboard --client CLIENT` |
+
+`CLIENT` is `kilo`, `codex`, `claude`, `copilot` or `vscode` (VS Code Copilot Chat, which also needs `--project-dir /absolute/path/to/project`). Use one route per machine: two installers must never manage the same skill folder.
+
+### A. Agent-run manual install
+
+Paste this into the coding agent:
+
+```prompt
+Install ClickUp Skills for <Kilo Code | Codex | Claude Code | Copilot CLI> on this machine.
+Node.js is not available here. Read
+https://raw.githubusercontent.com/randrescastaneda/clickup-skills/main/INSTALL.md
+and follow it exactly. Do not write anything to ClickUp or GitHub.
+Stop and ask me if anything conflicts with what is already installed.
+```
+
+The agent follows the [install runbook](install-runbook.html): it fetches a pinned source, copies the six skill folders, checks each file's SHA-256 against `skills/MANIFEST.json`, registers the official ClickUp MCP with the client's own command or an exact settings snippet, and reports. It runs no downloaded script.
+
+### B. GitHub CLI (`gh skill`, preview)
+
+Needs `gh` 2.90 or later. The `gh skill` command group is a preview and may change.
+
+| Client | Install the skills (user scope) |
+| --- | --- |
+| Claude Code | `gh skill install randrescastaneda/clickup-skills --all --agent claude-code --scope user` |
+| Copilot CLI | `gh skill install randrescastaneda/clickup-skills --all --agent github-copilot --scope user` |
+| Kilo Code | `gh skill install randrescastaneda/clickup-skills --all --dir "$HOME/.kilo/skills"` |
+| Codex | `gh skill install randrescastaneda/clickup-skills --all --dir "$HOME/.agents/skills"` |
+
+Add `--pin TAG` once a release tag exists. For Kilo and Codex pass `--dir`: `gh` 2.95 writes `--agent kilo` to `~/.kilocode/skills` and `--agent codex` to `~/.codex/skills`, not the folders this project uses. Update with `gh skill update --all`, adding the same `--dir` for Kilo and Codex. `gh skill` rewrites each `SKILL.md` frontmatter, so these copies belong to `gh`.
+
+Then register the official ClickUp MCP: `python3 scripts/setup.py onboard --client CLIENT --skip-skills` from a clone, or step 7 of the [install runbook](install-runbook.html) (the client's own command or the settings snippet).
+
+### C. Python only
+
+```bash
+git clone https://github.com/randrescastaneda/clickup-skills.git
+cd clickup-skills
+python3 scripts/setup.py onboard --client CLIENT
+```
+
+On Windows: `py -3 scripts\setup.py onboard --client CLIENT`. A ZIP download works instead of the clone. The `--mode`, `--github`, `--project-dir` and `--skip-skills` flags work as with npx. Update with `git pull` (or a new ZIP) and the same command.
+
+The command ends with one `RESULT {...}` line of JSON for agents. Exit code 3 means installed, with `gh` still needing your sign-in; the GitHub backend was not switched. `python3 scripts/setup.py status --client CLIENT` shows what is installed and changes nothing.
+
+### D. The client's own plugin manager
+
+**Claude Code**, with no Node:
+
+```bash
+claude plugin marketplace add randrescastaneda/clickup-skills
+claude plugin install clickup-skills@clickup-skills-marketplace
+```
+
+From a local clone, use a path starting with `./`, for example `claude plugin marketplace add ./clickup-skills`. The plugin supplies the six skills and the official ClickUp MCP (`clickup_official`) only. Plugin skills are namespaced (`clickup-skills:clickup-route`), so do not also install copies in `~/.claude/skills`.
+
+**Copilot CLI** (from vendor documentation, untested here): `copilot plugin install randrescastaneda/clickup-skills`. GitHub's plugin reference says Copilot CLI reads a root `plugin.json` with an Agent Plugins `$schema`, a root `mcp.json` and a `skills/` folder, which this repository provides.
+
+Codex has plugin marketplaces too, but OpenAI's documentation did not confirm the file a repository needs, so Codex uses routes A, B, C or E.
+
+### E. npx
+
+Needs Node 22+ and Python 3.11+:
+
+```bash
+npx --yes github:randrescastaneda/clickup-skills onboard --client CLIENT
+```
+
+## The npx route in detail
+
+This route needs [Node.js 22+](https://nodejs.org/), Python 3.11+ and Git; the default backend also needs GitHub CLI (`gh`). The same command works in macOS Terminal and Windows PowerShell:
 
 ```bash
 npx --yes github:randrescastaneda/clickup-skills onboard
@@ -43,11 +121,11 @@ For every row, the full command begins with `npx --yes github:randrescastaneda/c
 
 **What it does:** Installs six agent skills, adds ClickUp's official remote MCP endpoint (`https://mcp.clickup.com/mcp`) to your agent configuration and verifies/reuses `gh` browser sign-in by default. No hosted GitHub MCP or manually created per-repository token is needed for that backend. Use `--mode hosted --github hosted` to select an existing hosted connection; strict `--mode remote-only` never invokes `gh`. Settings and existing server entries are preserved. Conflicting or locally edited skill copies are not overwritten.
 
-**What it does NOT do:** It does not install Krodak's CLI, access a private ClickUp token, authenticate ClickUp in the terminal, or enable the local helper's durable journal. **ClickUp OAuth happens inside your coding agent in Step 2**, not through `npx`.
+**What it does NOT do:** It does not install Krodak's CLI, access a private ClickUp token, authenticate ClickUp in the terminal, or enable the local helper's durable journal. **ClickUp OAuth happens inside your coding agent**, not through `npx`.
 
 If the installer finds an existing equivalent ClickUp MCP server under a different name, it reuses it rather than installing a duplicate. An existing `clickup_work` server, if present, is preserved but **is not authenticated by hosted OAuth**.
 
-## 2. Reload your agent and verify OAuth
+## Reload your agent and verify OAuth
 
 Restart or reload the **selected coding agent** and send this instruction in its chat:
 
@@ -75,7 +153,7 @@ Your existing browser OAuth session may continue to work. The installer reuses a
 
 ## What is included and what is not
 
-| Default hosted ClickUp + GitHub CLI | Full local helper mode |
+| Default hosted ClickUp + GitHub CLI | Local-helper mode |
 | --- | --- |
 | **No ClickUp API token.** Official ClickUp MCP authorizes in the agent's browser flow | Requires the ClickUp CLI's personal API token, unless it is already configured |
 | Six skills + hosted ClickUp MCP + reusable `gh` sign-in | Six skills + private Python workflow + Krodak CLI + local `clickup_work` MCP |
@@ -84,12 +162,12 @@ Your existing browser OAuth session may continue to work. The installer reuses a
 
 **Both modes require task/repository access and a verified project scope.** GitHub-first links, bounded writes, and safe retry rules are required in either mode. An authorized OAuth grant may be able to write even while you are *testing reads*: agents must respect the actual approved write scope.
 
-### Optional: install the full helper instead
+### Optional: install the local helper instead
 
-To enable the stricter local helper and its synchronization worker, choose `--mode cli` explicitly:
+To enable the stricter local helper and its synchronization worker, choose `--mode local-helper` explicitly. It needs Node 22+, because Krodak's `cup` is an npm package:
 
 ```bash
-npx --yes github:randrescastaneda/clickup-skills onboard --mode cli --client kilo
+npx --yes github:randrescastaneda/clickup-skills onboard --mode local-helper --client kilo
 ```
 
 This installs our Python workflow and Krodak's `{{cup_install_spec}}`. If the user's personal ClickUp CLI sign-in has not been configured, the terminal guides them to [ClickUp Settings → Apps](https://app.clickup.com/settings/apps) to generate a token and enter it securely via `cup init`; `cup auth` verifies it. Existing valid CLI credentials are reused. This **does not** authorize the official hosted MCP. Keep tokens out of tasks, chats, commands, and version control.
@@ -116,7 +194,7 @@ A teammate installing the plugin does not install it for the entire team. No cre
 
 The *project you are actually editing* (not the ClickUp Skills repository) can contain `.clickup/project.json` binding its objective, repository, Workspace, home List, roots and statuses. The [project setup](project-setup.html) explains it.
 
-In OAuth mode, an agent can read an approved binding directly; it must verify the live identity/ancestry through the official MCP. An unbound agent must ask for explicit project scope **before writing**. It must not pretend that direct host calls use the local helper journal.
+With hosted ClickUp, an agent can read an approved binding directly; it must verify the live identity/ancestry through the official MCP. An unbound agent must ask for explicit project scope **before writing**. It must not pretend that direct host calls use the local helper journal.
 
 ## Small approved write pilot
 
@@ -135,7 +213,7 @@ npx skills add randrescastaneda/clickup-skills -g
 npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --skip-skills
 ```
 
-These two commands are an **alternative** to the single bundled installer, not an extra requirement. The `--skip-skills` option preserves Vercel-owned copies. For the local full-helper option append `--mode cli` to the second command. Use Vercel's `skills check` / `skills update -g` to maintain its copies. Avoid duplicate skill managers in the same directory.
+These two commands are an **alternative** to the single bundled installer, not an extra requirement. The `--skip-skills` option preserves Vercel-owned copies. For local-helper mode append `--mode local-helper` to the second command. Use Vercel's `skills check` / `skills update -g` to maintain its copies. Avoid duplicate skill managers in the same directory.
 
 </details>
 
@@ -167,7 +245,7 @@ For an installed token-backed local helper, `update` keeps its previous full-run
 npx --yes github:randrescastaneda/clickup-skills update --client kilo
 ```
 
-The full helper explicitly updates its private runtime and Krodak's latest CLI. Do not update in the middle of a task write. Reload the client and verify discovery after updates. Website publication never updates local agent installations.
+The local helper explicitly updates its private runtime and Krodak's latest CLI. Do not update in the middle of a task write. Reload the client and verify discovery after updates. Website publication never updates local agent installations.
 
 ## Optional native ClickUp–GitHub integration
 

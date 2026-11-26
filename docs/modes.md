@@ -19,7 +19,8 @@ helper requires GitHub CLI; selecting hosted GitHub with it is rejected.
 npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --mode hosted --github cli
 ```
 
-The convenience installer runs Node 22+, Python 3.11+ and Git. It copies skills,
+The npx installer runs Node 22+, Python 3.11+ and Git; the other [installation routes](clients.md#choose-an-installation-route)
+need no Node, and `python3 scripts/setup.py onboard` takes the same flags. It copies skills,
 configures `https://mcp.clickup.com/mcp`, then checks/reuses `gh` sign-in or
 starts GitHub's browser flow when needed. Install GitHub CLI separately if it is
 missing and allowed; the installer never silently installs it. Reuse one account
@@ -61,11 +62,15 @@ Sources: [ClickUp GitHub integration](https://help.clickup.com/hc/en-us/articles
 ## Strict manual route with no extra local tools
 
 Use an existing approved host supporting skill files and direct remote HTTP/OAuth.
-Import six `skills/` directories with references and MIT notices, preserving
-customized/externally managed copies. Configure official ClickUp MCP in its native
-UI and reuse an approved hosted GitHub connection. Verify skills, actual schemas,
-identity, Workspace/List/root ancestry and exact GitHub target before writing.
-There is no universal import format.
+The agent follows the [install runbook](../INSTALL.md) step by step: it copies the
+six `skills/` directories with their references and MIT notice, checks every file
+against `skills/MANIFEST.json`, and preserves customized or externally managed
+copies. It registers the official ClickUp MCP with the client's own command or an
+exact settings snippet, and runs no downloaded script. Reuse an approved hosted
+GitHub connection for remote-only. Verify skills, actual schemas, identity,
+Workspace/List/root ancestry and exact GitHub target before writing. Clients
+outside the runbook's table have no common import format: confirm their skill
+folders from vendor documentation first.
 
 Missing/banned selected tools mean **STOP**. Never install `cup`, `cu-work`,
 `npx mcp-remote`, Docker or another bridge as fallback for hosted ClickUp.

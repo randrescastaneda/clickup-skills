@@ -37,7 +37,7 @@ Task URLs in these examples are placeholders. Use a real task inside the bound s
 
 | Stage | You ask | The agent does |
 | --- | --- | --- |
-| Resume | “Where are we on this task?” | Reads binding, task, branch/PR and current discussions; checks local receipts **only in full-helper mode** |
+| Resume | “Where are we on this task?” | Reads binding, task, branch/PR and current discussions; checks local receipts **only in local-helper mode** |
 | Plan | “Break this into useful deliverables.” | Reuses existing children; resolves a GitHub target before every new child |
 | Implement | “Build the agreed change and verify it.” | Works on the branch, runs appropriate checks, records meaningful progress |
 | Review | “Prepare this for review.” | Links the PR both ways, preserves its body and sets the mapped review status |
@@ -48,7 +48,7 @@ Review and done are separate states. The plugin does not merge PRs or deploy sof
 
 ## Progress that helps the team
 
-Ask for milestone updates instead of a stream of small actions. A useful update says what changed, which evidence supports it, what is blocked, and what happens next. In the **full helper mode**, the helper includes ClickUp/GitHub links and mirrors progress to associated issue/PR discussions. In **OAuth mode**, the agent must follow the guarded workflow and explicitly perform approved mirroring; installing MCP does not start automatic synchronization.
+Ask for milestone updates instead of a stream of small actions. A useful update says what changed, which evidence supports it, what is blocked, and what happens next. In **local-helper mode**, the helper includes ClickUp/GitHub links and mirrors progress to associated issue/PR discussions. With **hosted ClickUp**, the agent must follow the guarded workflow and explicitly perform approved mirroring; installing MCP does not start automatic synchronization.
 
 ## When the agent should stop
 

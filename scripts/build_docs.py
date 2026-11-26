@@ -31,9 +31,10 @@ SOURCES = {
     "docs/wiki/github-clickup.md": ("github-integration", "Native integration setup", "Work with your agent"),
     "docs/validation.md": ("validation", "Validation & limits", "Reference"),
     "THIRD_PARTY_NOTICES.md": ("credits", "License & attribution", "Maintain"),
+    "INSTALL.md": ("install-runbook", "Install without Node (agent runbook)", "Start here"),
 }
 NAV = [
-    ("Start here", [("index", "Overview"), ("installation", "Install for your team"), ("project-setup", "Bind your first project")]),
+    ("Start here", [("index", "Overview"), ("installation", "Install for your team"), ("install-runbook", "Install without Node"), ("project-setup", "Bind your first project")]),
     ("Work with your agent", [("using-the-plugin", "Talk to your agent"), ("examples", "Usage examples"), ("synchronization", "GitHub, ClickUp & sync"), ("sync-worker", "Optional sync worker"), ("github-integration", "Native integration setup")]),
     ("Reference", [("modes", "Choose a mode"), ("reference", "Skills & MCP tools"), ("clients", "Client setup matrix"), ("profiles", "Backends & profiles"), ("binding-reference", "Project binding"), ("cli", "CLI for agents"), ("contract", "Execution contract"), ("validation", "Validation & limits"), ("troubleshooting", "Troubleshooting")]),
     ("Maintain", [("maintenance", "Documentation pipeline"), ("project-decisions", "Project decisions"), ("releases", "Version & releases"), ("credits", "License & attribution")]),
@@ -112,7 +113,7 @@ def client_setups():
             commands = f"npx --yes github:randrescastaneda/clickup-skills onboard --client {name}"
             if name == "vscode":
                 commands += " --project-dir /absolute/path/to/project"
-            text = "OAuth-first setup: installs six skills and hosted ClickUp MCP configuration; GitHub uses reusable gh sign-in by default; --github hosted selects an existing approved hosted connection and --mode remote-only forbids local CLI authentication. ClickUp browser authorization and tool verification happen inside the agent. Use --mode local-helper (legacy --mode cli) only for the token-backed local helper."
+            text = "Without Node: python3 scripts/setup.py onboard --client " + name + (" --project-dir /absolute/path/to/project" if name == "vscode" else "") + " from a clone, gh skill install, or the agent-run install runbook (INSTALL.md). With Node, the command below. OAuth-first setup: installs six skills and hosted ClickUp MCP configuration; GitHub uses reusable gh sign-in by default; --github hosted selects an existing approved hosted connection and --mode remote-only forbids local CLI authentication. ClickUp browser authorization and tool verification happen inside the agent. Use --mode local-helper (legacy --mode cli) only for the token-backed local helper."
         else:
             commands = (f"python3 scripts/install_skills.py --client {name}\n" if name in SKILL_PATHS else "")
             commands += f"python3 scripts/configure.py --client {name if name in CONFIG_CLIENTS else 'portable'} --profile remote-only"

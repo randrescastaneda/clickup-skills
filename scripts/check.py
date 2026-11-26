@@ -62,6 +62,21 @@ versions = {json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["ver
 spec = importlib.util.spec_from_file_location("metadata", ROOT / "scripts/build_metadata.py")
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+# INSTALL.md settings paths must match the installer's own destinations.
+setup_spec = importlib.util.spec_from_file_location("setup_installer", ROOT / "scripts/setup.py")
+installer = importlib.util.module_from_spec(setup_spec)
+setup_spec.loader.exec_module(installer)
+from unittest.mock import patch
+with patch.dict(os.environ, {}, clear=False), patch.object(Path, "home", return_value=Path("~")):
+    os.environ.pop("XDG_CONFIG_HOME", None)
+    os.environ.pop("CODEX_HOME", None)
+    for client, _, _, user, project, _ in module.INSTALL_CLIENTS:
+        if user:
+            assert installer.config_destination(client).as_posix() == user, client
+        assert installer.config_destination(client, Path(".")).as_posix() == project, client
+install_text = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
+assert len(install_text.splitlines()) <= 260, "INSTALL.md is too long"
+assert not re.findall(r"\]\((?!https:)[^)]*\)", install_text), "INSTALL.md links must be absolute https"
 for path, source in module.BUNDLED.items():
     assert (ROOT / path).read_bytes() == (ROOT / source).read_bytes(), path + " differs from " + source
 assert versions == {module.VERSION}, "Version differs between package.json, pyproject.toml and build_metadata.py"
