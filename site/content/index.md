@@ -3,32 +3,32 @@ title: Overview
 description: Project-bound ClickUp and GitHub workflows for coding agents.
 section: Start here
 ---
+<div class="home-intro">
 <div class="hero">
-<div class="eyebrow"><span class="status-dot"></span> BUILT FOR AGENTS. GUIDED BY YOU.</div>
-<h1>Give your agent<br>a clear path <em>to done.</em></h1>
-<p class="hero-description">One objective. Connected tasks. Work you can verify.<br>Bring ClickUp and GitHub into your agent’s everyday workflow.</p>
-<div class="hero-actions"><a class="button primary" href="installation.html">Set up your team <span>↗</span></a><a class="button secondary" href="examples.html">Explore examples <span>→</span></a></div>
-<div class="compatibility">WORKS WITH <span>Claude Code</span><span>Codex</span><span>Copilot</span><span>Kilo</span><span>+ more</span></div>
+<h1>Connect ClickUp and GitHub <em>in your coding agent.</em></h1>
+<p class="hero-description">Give your agent a task. It checks project scope, links the work to GitHub, and records progress in ClickUp.</p>
+<div class="hero-actions"><a class="button primary" href="installation.html">Install with your agent</a><a class="button secondary" href="examples.html">Explore examples</a></div>
+<p class="home-install-note">Choose from <a href="installation.html#choose-an-installation-route">five installation methods</a>. We recommend starting with your own agent.</p>
 </div>
 
 <div class="workflow-demo" aria-label="Illustrative agent workflow">
-<div class="demo-top"><span class="demo-label"><span class="status-dot"></span> A CONNECTED WORKFLOW</span><span class="subtle">Illustrative example</span></div>
-<div class="demo-prompt"><div class="avatar">Y</div><div><span class="micro-label">YOU SET THE DIRECTION</span><p>Work on the dashboard task. Keep ClickUp updated and link the PR when it’s ready.</p></div></div>
-<div class="demo-result"><div class="avatar agent">↗</div><div><span class="micro-label">YOUR AGENT HANDLES THE WORKFLOW</span><div class="task-line"><span class="tick">✓</span> Verify project and task scope <span class="tag">ClickUp</span></div><div class="task-line"><span class="tick">✓</span> Link an issue before creating a subtask <span class="tag">GitHub</span></div><div class="task-line"><span class="tick">✓</span> Record progress and connect the PR <span class="tag">Both</span></div><div class="task-line"><span class="pending">◷</span> Wait for merge, checks, and acceptance <span class="tag neutral">In review</span></div></div></div>
-<div class="demo-bottom">A linked PR is progress. Verified acceptance is completion.</div>
+<div class="demo-top"><span class="demo-label">Example task</span></div>
+<div class="demo-prompt"><span class="micro-label">You</span><p>Work on the dashboard task. Keep ClickUp updated and link the PR when it’s ready.</p></div>
+<div class="demo-result"><span class="micro-label">Your agent</span><ul><li>Verify the ClickUp task and repository.</li><li>Link a GitHub issue before creating a subtask.</li><li>Record progress and link the pull request.</li><li>Check the merge, CI results, and acceptance criteria before marking the task done.</li></ul></div>
+</div>
 </div>
 
 ## You describe the work. Your agent coordinates it.
 
 ClickUp Skills is a workflow plugin for coding agents. Its default setup installs {{skill_count}} shared skills and connects ClickUp's official MCP through browser OAuth. It needs no Node: an agent can install it by following a [runbook](install-runbook.html). An **optional** local scoped helper exposes {{tool_count}} MCP tools for teams that want durable operation receipts and a separate token-backed CLI. **After setup, use natural language. Your agent operates the tools.**
 
-<div class="feature-grid"><a class="feature" href="project-setup.html"><span class="feature-number">01 / DEFINE</span><h3>Start with a real objective</h3><p>Bind the repository to the right workspace, list, and task tree. Keep the work inside that scope.</p><span class="text-link">Bind a project →</span></a><a class="feature" href="using-the-plugin.html"><span class="feature-number">02 / DELEGATE</span><h3>Keep the work connected</h3><p>Your agent creates useful subtasks, associates GitHub targets, and records meaningful progress.</p><span class="text-link">See the daily workflow →</span></a><a class="feature" href="synchronization.html"><span class="feature-number">03 / VERIFY</span><h3>Make “done” mean done</h3><p>Link evidence, preserve discussions, and verify the merged PR, latest-head checks, and acceptance.</p><span class="text-link">Understand the rules →</span></a></div>
+<div class="feature-grid"><a class="feature" href="project-setup.html"><h3>Bind a project</h3><p>Connect the repository to its ClickUp workspace, list, and task tree.</p></a><a class="feature" href="using-the-plugin.html"><h3>Delegate work</h3><p>Ask your agent to link subtasks and GitHub issues, and record progress.</p></a><a class="feature" href="synchronization.html"><h3>Verify completion</h3><p>Preserve discussions and verify the merged PR, checks, and acceptance.</p></a></div>
 
 ## A clear division of responsibility
 
 | You and your team | Your agent |
 | --- | --- |
-| Install the skills once per teammate, or ask the agent to; approve account access | Discover installed skills and available tools |
+| Ask each coding agent you use to install the skills, then approve account access | Install and verify the skills and access for that agent |
 | Choose the objective, repository, and ClickUp task | Verify scope before making task changes |
 | Define acceptance criteria and review the result | Link subtasks, report progress, and provide evidence |
 | Configure optional native integrations | Reconcile discussions when asked or at session boundaries |
