@@ -16,7 +16,7 @@ You do not need to remember `cu-work` commands, MCP tool names, or synchronizati
   a GitHub target before creating a subtask, and stops on uncertain writes.
   These checks are agent-enforced; there is no local `clickup_work` journal.
 - **Optional full local helper:** If you deliberately installed
-  `onboard --mode cli`, authenticated Krodak's `cup`, and bound this project,
+  `onboard --mode local-helper`, authenticated Krodak's `cup`, and bound this project,
   your agent may use `clickup_work` for helper-enforced scope and durable
   receipts. The two authentication methods are separate.
 

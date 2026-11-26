@@ -517,7 +517,7 @@ def status(args, home):
     report = {"client": args.client, "skills_dir": str(skills), "skills": skill_states(skills),
               "config": str(destination), "config_exists": destination.is_file(), "config_problem": problem,
               "official_servers": aliases,
-              "recorded_selection": {"mode": receipt["mode"], "github": receipt["github"]} if "mode" in receipt else None,
+              "recorded_selection": {"mode": receipt["mode"], "github": receipt.get("github")} if "mode" in receipt else None,
               "gh": {"present": gh != "missing", "authenticated": gh == "authenticated"},
               "helper_runtime": bool(runtime and (runtime / "runtime.json").is_file())}
     print(json.dumps(report, indent=2))

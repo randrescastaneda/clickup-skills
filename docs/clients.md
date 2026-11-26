@@ -198,7 +198,7 @@ Replace the path with your **existing working repository** (quote it if it conta
 
 ## If you want the token-backed, fully scoped local helper
 
-The default OAuth path uses agent-enforced scope, GitHub-first ordering, and duplicate checks. It **does not** have the local helper's operation journal, OS lock or scheduled sync worker. For those stricter local mechanisms, deliberately choose `--mode local-helper` (legacy alias `--mode cli`) and a client. This mode needs Node 22+, because Krodak's `cup` is an npm package:
+The default hosted path uses agent-enforced scope, GitHub-first ordering, and duplicate checks. It **does not** have the local helper's operation journal, OS lock or scheduled sync worker. For those stricter local mechanisms, deliberately choose `--mode local-helper` (legacy alias `--mode cli`) and a client. This mode needs Node 22+, because Krodak's `cup` is an npm package:
 
 ```bash
 npx --yes github:randrescastaneda/clickup-skills onboard --mode local-helper --client kilo

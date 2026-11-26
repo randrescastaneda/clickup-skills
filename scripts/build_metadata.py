@@ -30,7 +30,7 @@ INSTALL_CLIENTS = (
 def put(path, value):
     dest = ROOT / path
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+    dest.write_bytes((json.dumps(value, indent=2) + "\n").encode("utf-8"))  # LF on every platform
 
 
 def write(path, text, source=None):

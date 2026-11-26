@@ -470,6 +470,17 @@ class StatusTests(unittest.TestCase):
         receipt = json.loads((skills / "clickup-github/.clickup-skills.json").read_text(encoding="utf-8"))
         self.assertEqual(receipt["version"], setup.tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"])
 
+    def test_status_reads_a_receipt_written_before_backends_were_recorded(self):
+        # Installers before the independent-backend change stored a mode and no GitHub backend.
+        self.run_script("onboard", "--client", "claude", "--mode", "remote-only")
+        receipt = next((self.root / "managed/clients").glob("*.json"))
+        data = json.loads(receipt.read_text(encoding="utf-8"))
+        del data["github"]
+        data["mode"] = "oauth"
+        receipt.write_text(json.dumps(data), encoding="utf-8")
+        report = json.loads(self.run_script("status", "--client", "claude").stdout)
+        self.assertEqual(report["recorded_selection"], {"mode": "oauth", "github": None})
+
     def test_status_requires_a_client(self):
         result = self.run_script("status", check=False)
         self.assertNotEqual(result.returncode, 0)
