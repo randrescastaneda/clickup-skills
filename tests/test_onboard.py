@@ -24,6 +24,13 @@ class ChooseClientTests(unittest.TestCase):
         # Enter selects Kilo only in a terminal.
         self.assertEqual(onboard.choose_client(interactive=True, prompt=lambda _: ""), "kilo")
 
+    def test_closed_input_at_the_prompt_is_treated_as_no_terminal(self):
+        # Windows reports the null device as a terminal, so the prompt itself hits EOF.
+        def closed(_):
+            raise EOFError
+        with self.assertRaisesRegex(ValueError, "pass --client"):
+            onboard.choose_client(interactive=True, prompt=closed)
+
     def test_no_terminal_without_client_is_an_error_listing_clients(self):
         with self.assertRaises(ValueError) as caught:
             onboard.choose_client(interactive=False)

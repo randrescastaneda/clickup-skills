@@ -24,16 +24,21 @@ def choose_client(interactive: bool | None = None, prompt=input) -> str:
     """Choose a supported agent; Enter selects Kilo. --client bypasses this."""
     if interactive is None:
         interactive = sys.stdin.isatty()
+    no_terminal = ValueError("No interactive terminal: pass --client with one of " + VALID_CLIENTS + ". Nothing was changed.")
     if not interactive:
         # An agent installing for another client must never get Kilo by accident.
-        raise ValueError("No interactive terminal: pass --client with one of " + VALID_CLIENTS + ". Nothing was changed.")
+        raise no_terminal
     print("\nWhich coding agent are you installing for?")
     for number, _, label in CLIENT_CHOICES:
         print(f"  {number}. {label}{' (default)' if number == '1' else ''}")
     options = {number: client for number, client, _ in CLIENT_CHOICES}
     options.update({client: client for _, client, _ in CLIENT_CHOICES})
     while True:
-        answer = prompt("Choose agent [1]: ").strip().lower()
+        try:
+            answer = prompt("Choose agent [1]: ").strip().lower()
+        except EOFError:
+            # Windows reports the null device as a terminal; closed input means no terminal.
+            raise no_terminal from None
         if not answer:
             return "kilo"
         if answer in options:
@@ -59,7 +64,11 @@ def authenticate_clickup(cup_command: list[str], interactive: bool | None = None
     print("3. Return here; cup will ask for your token and Workspace ID.")
     print("   The Workspace ID is the number in your ClickUp app URL.")
     print("   Never paste the token into an agent chat, repository, or command line.")
-    input("Press Enter when ready to configure ClickUp...")
+    try:
+        input("Press Enter when ready to configure ClickUp...")
+    except EOFError:
+        raise ValueError("ClickUp needs an interactive sign-in. Rerun onboard in a terminal, "
+                         "or configure your existing ClickUp CLI credentials first.") from None
     subprocess.run(cup_command + ["init"], check=True)
     subprocess.run(cup_command + ["auth"], check=True)
     print("ClickUp: authentication verified.")

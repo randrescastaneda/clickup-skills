@@ -537,7 +537,7 @@ class PackagedInstallTests(unittest.TestCase):
     def test_cu_work_launcher_follows_the_current_runtime(self):
         launcher = self.managed / "bin" / ("cu-work.cmd" if os.name == "nt" else "cu-work")
         result = self.run_setup()
-        self.assertIn(str(self.managed / "bin"), result.stdout)
+        self.assertIn(str((self.managed / "bin").resolve()), result.stdout)
         first = Path(json.loads((self.managed / "installation.json").read_text())["runtime"])
         self.assertIn(str(first), launcher.read_text(encoding="utf-8"))
         self.assertTrue((self.managed / "bin/cu-work.cmd").is_file())
