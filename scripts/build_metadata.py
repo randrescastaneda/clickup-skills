@@ -3,7 +3,11 @@
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+# SOURCE is read; ROOT is written. check.py points ROOT at a temporary folder.
+SOURCE = ROOT = Path(__file__).resolve().parents[1]
+VERSION = "0.2.0"
+# Files copied into installed skills so each skill is self-contained.
+BUNDLED = {"skills/clickup-bind-project/assets/project.example.json": "examples/project.json"}
 
 
 def put(path, value):
@@ -12,8 +16,14 @@ def put(path, value):
     dest.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
+def copy(path, source):
+    dest = ROOT / path
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes((SOURCE / source).read_bytes())
+
+
 def main():
-    identity = {"name": "clickup-skills", "version": "0.1.0",
+    identity = {"name": "clickup-skills", "version": VERSION,
                 "description": "Project-bound ClickUp workflows with CLI/MCP routing and GitHub PR linkage.",
                 "author": {"name": "Andres Castaneda"},
                 "repository": "https://github.com/randrescastaneda/clickup-skills", "license": "MIT"}
@@ -22,7 +32,7 @@ def main():
     put(".codex-plugin/plugin.json", {**identity, "skills": "./skills/", "mcpServers": "./.mcp.json"})
     put(".claude-plugin/marketplace.json", {
         "name": "clickup-skills-marketplace", "owner": {"name": "Andres Castaneda"},
-        "plugins": [{"name": "clickup-skills", "source": "./", "version": "0.1.0",
+        "plugins": [{"name": "clickup-skills", "source": "./", "version": VERSION,
                      "description": identity["description"]}]})
     basic = {"clickup_work": {"type": "stdio", "command": "cu-work", "args": ["mcp"]},
              "github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}
@@ -44,6 +54,8 @@ def main():
     put("profiles/local-helper.json", {"mcpServers": basic})
     for name, extra in variants.items():
         put("profiles/" + name + ".json", {"mcpServers": {**basic, **extra}})
+    for path, source in BUNDLED.items():
+        copy(path, source)
 
 
 if __name__ == "__main__":

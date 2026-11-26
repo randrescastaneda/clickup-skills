@@ -1,6 +1,8 @@
 ---
 name: clickup-github
 description: Link ClickUp tasks and subtasks with GitHub repos, issues, PRs, comments, checks, and completion evidence through CLI or MCP. Use to create missing issue targets, synchronize discussions, link implementation PRs, configure native integration, or coordinate work across both systems.
+license: MIT
+compatibility: Requires the official ClickUp MCP authorized in the agent, or the optional cu-work local helper; GitHub through gh or an approved hosted connection.
 ---
 
 # Connect tasks, artifacts, and discussions
@@ -12,7 +14,7 @@ across authorized repositories and verify each project target; no per-repository
 token is required for `gh`. Strict **remote-only** permits hosted connections
 only and forbids `gh`. Missing or banned selected tools mean STOP, not fallback.
 Never use `cup`, `cu-work` or a bridge for hosted ClickUp. Follow the
-[host guard protocol](../clickup-github/references/official-mcp-issue-first.md)
+[host guard protocol](references/official-mcp-issue-first.md)
 before hosted writes; these are agent checks outside helper receipts/locks/gates.
 Local ClickUp helper commands below apply only in explicit **local-helper** mode.
 

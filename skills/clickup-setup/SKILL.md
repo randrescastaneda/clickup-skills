@@ -1,6 +1,8 @@
 ---
 name: clickup-setup
 description: Install, authenticate, validate, or update ClickUp Skills. Choose hosted ClickUp with independent GitHub CLI or hosted access, strict remote-only, or the optional local helper. Use for onboarding, safe configuration and diagnosing setup.
+license: MIT
+compatibility: Any agent that loads Agent Skills. Scripted routes need Python 3.11+ or gh 2.90+; Node 22+ only for npx and local-helper mode. Configures the official ClickUp MCP; GitHub through gh or an approved hosted connection.
 ---
 
 # Guided ClickUp Skills setup
@@ -77,7 +79,7 @@ Kilo through ClickUp MCP, or synchronize every comment. Use the selected GitHub
 backend for direct issue/PR edits, code review and CI verification. Establish one
 owner for issue creation/comment mirroring to avoid duplicates.
 
-Load the [guarded issue-first host protocol](../clickup-github/references/official-mcp-issue-first.md)
+Load the [guarded issue-first host protocol](../clickup-github/references/official-mcp-issue-first.md) (in the sibling skill `clickup-github`, file `references/official-mcp-issue-first.md`)
 before any hosted write. Verify exact scope, GitHub target, complete duplicates,
 bounded writes, readback and uncertain outcomes. These are agent safeguards,
 outside helper journals/locks/gates. Do not update tools during task writes.

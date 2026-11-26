@@ -1,6 +1,8 @@
 ---
 name: clickup-route
 description: Choose an efficient available CLI or free MCP for a ClickUp/GitHub operation. Use whenever a bound project needs ClickUp tools, a backend lacks a capability, a rate limit occurs, or a choice among cup, community MCP, official ClickUp MCP, gh, and GitHub MCP is needed.
+license: MIT
+compatibility: Requires the official ClickUp MCP authorized in the agent, or the optional cu-work local helper; GitHub through gh or an approved hosted connection.
 ---
 
 # Route each operation
@@ -12,7 +14,7 @@ across authorized repositories and verify each project target; no per-repository
 token is required for `gh`. Strict **remote-only** permits hosted connections
 only and forbids `gh`. Missing or banned selected tools mean STOP, not fallback.
 Never use `cup`, `cu-work` or a bridge for hosted ClickUp. Follow the
-[host guard protocol](../clickup-github/references/official-mcp-issue-first.md)
+[host guard protocol](../clickup-github/references/official-mcp-issue-first.md) (in the sibling skill `clickup-github`, file `references/official-mcp-issue-first.md`)
 before hosted writes; these are agent checks outside helper receipts/locks/gates.
 Local ClickUp helper commands below apply only in explicit **local-helper** mode.
 
@@ -32,7 +34,7 @@ installation, use the connected official ClickUp MCP for ClickUp operations
 and the selected GitHub backend (`gh` by default, or approved hosted tools); never choose `cup`,
 `rest-mcp`, or unbound `clickup_work` merely because it appears in a client
 tool list. Those are separate authentication and receipt domains. Before
-any host write, load the [guarded OAuth issue-first protocol](../clickup-github/references/official-mcp-issue-first.md).
+any host write, load the [guarded OAuth issue-first protocol](../clickup-github/references/official-mcp-issue-first.md) (in the sibling skill `clickup-github`, file `references/official-mcp-issue-first.md`).
 The local helper's `route_operation` only advises and may lack a project
 binding in host-mode sessions. No automatic fallback to the CLI after a
 host write failure.

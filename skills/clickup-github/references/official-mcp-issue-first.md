@@ -58,9 +58,7 @@ All checks must pass before writing:
 
 Use a stable, non-secret operation key chosen once per logical attempt:
 `[host-op:KEY]`. **Do not manufacture `[cu-work:...]` receipts**; those
-markers are reserved for the helper's binding-hashed protocol. The previous
-OAuth pilot used `[pilot-op:official-mcp-868mjzgzh-20261022-v1]` and may be
-reused *as evidence*, not as a new operation key.
+markers are reserved for the helper's binding-hashed protocol.
 
 | Preflight evidence | Mandatory decision |
 | --- | --- |

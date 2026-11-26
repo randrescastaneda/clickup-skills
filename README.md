@@ -25,9 +25,9 @@ advanced options, not required installation steps.
 
 | Component | Purpose |
 | --- | --- |
-| Six portable skills | Bind a project, route tools, work a task, link GitHub, resume/handoff |
-| Optional `cu-work` CLI | With `--mode cli`: enforce scope, create GitHub-associated subtasks, link issues/PRs, sync discussions, and gate completion |
-| Optional `clickup_work` MCP | With `--mode cli`: the same nine local-helper tools; hosted OAuth does not authenticate it |
+| Six portable skills | Set up and verify the installation, bind a project, route tools, work a task, link GitHub, resume/handoff |
+| Optional `cu-work` CLI | With `--mode local-helper` (legacy alias `--mode cli`): enforce scope, create GitHub-associated subtasks, link issues/PRs, sync discussions, and gate completion |
+| Optional `clickup_work` MCP | With `--mode local-helper`: the same nine local-helper tools; hosted OAuth does not authenticate it |
 | Optional `sync-worker` | Preview or poll comments for explicit linked tasks on one authenticated machine |
 | Claude Code marketplace + portable/Codex manifests | Team installation from this repository |
 | Copilot, Kilo, VS Code, and Posit adapters | Render each client's own MCP format from the same profiles |
@@ -63,7 +63,7 @@ Only the running agent can authorize the hosted OAuth connection. For direct off
 The stricter local workflow requires independent ClickUp CLI authentication and a valid project binding. Enable it **explicitly**:
 
 ```bash
-npx --yes github:randrescastaneda/clickup-skills onboard --mode cli --client kilo
+npx --yes github:randrescastaneda/clickup-skills onboard --mode local-helper --client kilo
 ```
 
 This installs our private Python workflow, Krodak's `@krodak/clickup-cli@latest`, and the local `clickup_work` MCP. If needed, the terminal guides a **personal API token** sign-in from [ClickUp Settings → Apps](https://app.clickup.com/settings/apps). The token-based helper cannot borrow the official MCP's OAuth session. Conversely, its durable receipts, scoped mutations, and shared OS lock do **not** apply when an agent calls the hosted MCP directly.
@@ -77,7 +77,7 @@ npx skills add randrescastaneda/clickup-skills -g
 npx --yes github:randrescastaneda/clickup-skills onboard --client kilo --skip-skills
 ```
 
-This is an **alternative** to the one-command bundled installer, not an additional mandatory step. `--skip-skills` leaves Vercel's copies intact. Add `--mode cli` to the second command if you deliberately want the local helper. Update Vercel copies using `npx skills check` and `npx skills update -g`, and update the local helper (if installed) with `npx --yes github:randrescastaneda/clickup-skills update --client kilo --skip-skills`. Do not let two installers manage the same skill directory.
+This is an **alternative** to the one-command bundled installer, not an additional mandatory step. `--skip-skills` leaves Vercel's copies intact. Add `--mode local-helper` to the second command if you deliberately want the local helper. Update Vercel copies using `npx skills check` and `npx skills update -g`, and update the local helper (if installed) with `npx --yes github:randrescastaneda/clickup-skills update --client kilo --skip-skills`. Do not let two installers manage the same skill directory.
 
 For project-scoped agents add `--project-dir /absolute/project`. VS Code's MCP configuration uses `--client vscode` and that flag. Onboarding neither modifies remote tasks nor enables ClickUp's native GitHub integration. Full instructions: [team installation](https://randrescastaneda.github.io/clickup-skills/installation.html).
 
@@ -116,9 +116,11 @@ Claude Code:
 /plugin install clickup-skills@clickup-skills-marketplace
 ```
 
-This **advanced marketplace path is separate from the recommended OAuth
-onboarding**; its generated root manifest now configures only official hosted ClickUp MCP. Verify hosted GitHub separately. It does
-not install or authenticate the Python/Krodak runtime. Prefer `onboard --client claude` for browser-OAuth-only setup; do not install duplicate skills or servers.
+This **marketplace path is separate from `onboard`**. The plugin supplies the six
+skills and the official ClickUp MCP (`clickup_official`) only; it adds no
+`clickup_work` or GitHub server, and it does not install or authenticate the
+Python/Krodak runtime. Use one route per machine: plugin skills are namespaced,
+so a second copy in `~/.claude/skills` shows up as duplicates. Prefer `onboard --client claude` for browser-OAuth-only setup; do not install duplicate skills or servers.
 Installing the marketplace plugin does not grant Workspace/repository access.
 
 Codex and OpenCode can use the same portable skills:
@@ -165,7 +167,7 @@ Ask me for missing facts, read any existing binding, and make only the local
 binding after verification. Do not create or modify remote tasks.
 ```
 
-**Advanced: token-backed full helper only (`--mode cli`).** The following `cu-work` commands require the separately installed local helper and its authenticated CLI. Run them in the repository you want the agent to work on, not in this plugin checkout:
+**Advanced: token-backed local helper only (`--mode local-helper`).** The following `cu-work` commands require the separately installed local helper and its authenticated CLI. Run them in the repository you want the agent to work on, not in this plugin checkout:
 
 ```bash
 cu-work --project-dir /absolute/path/to/project init \
@@ -242,7 +244,7 @@ are not proxied or journaled by `cu-work`. See [the execution contract](docs/con
 
 **In OAuth mode, ask the coding agent in plain language** to read the approved task, verify GitHub targets before new subtasks, record progress and link PR evidence. The agent follows the [guarded issue-first protocol](skills/clickup-github/references/official-mcp-issue-first.md), but does not have the local helper's durable receipts or worker.
 
-**Advanced full-helper mode (`--mode cli`)** — only here do the `cu-work` commands below apply:
+**Advanced local-helper mode (`--mode local-helper`)** — only here do the `cu-work` commands below apply:
 
 ```bash
 cu-work --project-dir /absolute/project focus --task 86native

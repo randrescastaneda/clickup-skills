@@ -10,6 +10,8 @@ Use `onboard --mode hosted --github cli` explicitly for this combination. `--mod
 
 The convenience installer runs Node 22+, Python 3.11+ and Git; the default also needs an already allowed GitHub CLI. The strict manual route can use existing hosts with no extra local tools. See [modes and host constraints](modes.md).
 
+ClickUp says it keeps an allowlist of vetted MCP clients for the official server ([ClickUp MCP server](https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server), [ClickUp setup guide, 8 September 2026](https://clickup.com/blog/how-to-use-clickup-mcp-server/)); Kilo, Codex and Copilot CLI are not named on it. If the browser authorization is refused for your client, stop and report it; do not switch to a bridge or a token.
+
 **Choose the agent, not the editor.** For example, use the **Kilo** instructions when Kilo runs inside VS Code or Positron; use **Codex** when you run Codex there. These instructions are for local agents, not Copilot's GitHub-hosted cloud agent.
 
 ## The same two actions for everyone
@@ -73,7 +75,7 @@ npx --yes github:randrescastaneda/clickup-skills onboard --client claude
 - **Installed configuration:** `~/.claude.json`; user skills go in `~/.claude/skills/`.
 - **Next:** Restart Claude Code. Use `claude mcp list` in your terminal or `/mcp` within Claude Code. Follow its browser OAuth authorization if `clickup_official` says it needs sign-in.
 - **GitHub:** Reuse `gh` sign-in by default. An explicitly selected hosted GitHub connection has independent authorization and must pass repository reads.
-- **Avoid duplicate installs:** The older Claude marketplace plugin is a separate installation route. Do **not** install both its skill/MCP copies and this installer into the same destinations.
+- **Avoid duplicate installs:** The Claude Code marketplace plugin is a separate installation route. It supplies the six skills and the official ClickUp MCP (`clickup_official`) only; it adds no `clickup_work` or GitHub server. Use one route per machine: plugin skills are namespaced (`clickup-skills:clickup-route`), so a second copy in `~/.claude/skills` shows up as duplicates.
 
 [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp). Do not treat the editor's own chat or Claude Desktop settings as the Claude Code CLI settings.
 

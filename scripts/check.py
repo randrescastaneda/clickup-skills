@@ -27,21 +27,34 @@ for file in (ROOT / "skills").glob("*/SKILL.md"):
     assert re.search(r"^description: .+", front, re.M), file
     assert "[TODO" not in text, file
     assert (file.parent / "agents/openai.yaml").is_file(), file
+    assert re.search(r"^license: MIT$", front, re.M), file
+# Installed skills are copied without the rest of the repository: relative links
+# must stay inside skills/, and every other link must be absolute HTTPS.
+for file in (ROOT / "skills").rglob("*.md"):
+    for target in re.findall(r"\]\(([^)\s]+)\)", file.read_text(encoding="utf-8")):
+        if re.match(r"[a-z]+:", target):
+            assert target.startswith("https:"), (file, target)
+            continue
+        resolved = (file.parent / target.split("#")[0]).resolve()
+        assert resolved.is_file() and resolved.is_relative_to(ROOT / "skills"), (file, target)
 for project in json.loads((ROOT / "upstreams.lock.json").read_text(encoding="utf-8"))["projects"]:
     assert re.fullmatch(r"[a-f0-9]{40}", project["commit"]), project
     notice = (ROOT / project["notice"]).read_text(encoding="utf-8")
     assert project["license"] == "MIT" and "Permission is hereby granted" in notice, project
 
+versions = {json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"],
+            tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]}
 # Check that generated client configurations are reproducible without rewriting source.
 spec = importlib.util.spec_from_file_location("metadata", ROOT / "scripts/build_metadata.py")
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+assert versions == {module.VERSION}, "Version differs between package.json, pyproject.toml and build_metadata.py"
 with tempfile.TemporaryDirectory() as temporary:
     module.ROOT = Path(temporary)
     module.main()
-    for generated in Path(temporary).rglob("*.json"):
+    for generated in (p for p in Path(temporary).rglob("*") if p.is_file()):
         actual = ROOT / generated.relative_to(temporary)
-        assert actual.read_text(encoding="utf-8") == generated.read_text(encoding="utf-8"), str(actual) + " is stale"
+        assert actual.is_file() and actual.read_bytes() == generated.read_bytes(), str(actual) + " is stale"
 for profile in ("remote-only", "local-helper", "default", "official", "context", "rest"):
     rendered = subprocess.run([sys.executable, "scripts/configure.py", "--client", "codex", "--profile", profile],
                               capture_output=True, text=True, encoding="utf-8", check=True)

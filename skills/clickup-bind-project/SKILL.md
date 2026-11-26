@@ -1,6 +1,8 @@
 ---
 name: clickup-bind-project
 description: Bind a Git repository, project objective, ClickUp workspace/list, and one or more root tasks. Use for project setup, switching projects, linking a repository to ClickUp, or choosing the task all later agent work should use.
+license: MIT
+compatibility: Requires the official ClickUp MCP authorized in the agent, or the optional cu-work local helper; GitHub through gh or an approved hosted connection.
 ---
 
 # Bind the project
@@ -12,7 +14,7 @@ across authorized repositories and verify each project target; no per-repository
 token is required for `gh`. Strict **remote-only** permits hosted connections
 only and forbids `gh`. Missing or banned selected tools mean STOP, not fallback.
 Never use `cup`, `cu-work` or a bridge for hosted ClickUp. Follow the
-[host guard protocol](../clickup-github/references/official-mcp-issue-first.md)
+[host guard protocol](../clickup-github/references/official-mcp-issue-first.md) (in the sibling skill `clickup-github`, file `references/official-mcp-issue-first.md`)
 before hosted writes; these are agent checks outside helper receipts/locks/gates.
 Local ClickUp helper commands below apply only in explicit **local-helper** mode.
 
@@ -24,7 +26,7 @@ Local ClickUp helper commands below apply only in explicit **local-helper** mode
    cu-work --project-dir /absolute/worktree init --name 'Project name' --objective 'Approved objective' --workspace 1234567 --list 901234 --task 86native --repository team/project
    ```
 
-   **OAuth mode:** use `examples/project.json` as the v1 schema to propose the *same* `.clickup/project.json` binding in the actual work repository; add it only when authorized, after verifying the IDs through official MCP. The `routing.runtime` field is reserved for a future local helper; it must not be set to `official` because that value is unsupported by the helper. The host workflow uses the binding solely as an explicit scope reference, not as proof of enforced protections. Repeat `--task` for other roots in the same home list. For roots across different lists, use separate project worktrees/bindings in this release. Existing bindings are not overwritten.
+   **OAuth mode:** start from [`assets/project.example.json`](assets/project.example.json) (the v1 schema, shipped with this skill) to propose the *same* `.clickup/project.json` binding in the actual work repository; add it only when authorized, after verifying the IDs through official MCP. Fill in `name`, `objective`, `clickup.workspace_id`, `clickup.list_id`, `clickup.root_task_ids`, `github.repository` and `github.base_branch`. Keep `routing.*` at its defaults: `runtime` stays `cup` and is unused with hosted ClickUp; it must not be set to `official` because that value is unsupported by the helper. Keep `github.status_map` as `{}` until the List's exact statuses are read. The host workflow uses the binding solely as an explicit scope reference, not as proof of enforced protections. Repeat `--task` for other roots in the same home list. For roots across different lists, use separate project worktrees/bindings in this release. Existing bindings are not overwritten.
 4. Read each root from ClickUp and verify its native `id`, `team_id`, and home `list.id`. Run `cu-work ... task --task ID` only in local-helper mode when the local runtime is available. With a host MCP, verify identity and ancestry; if its compact response omits `team_id`, establish the explicit Workspace through hierarchy and matching task Space/List, following `clickup-github`. Prefer returned `text_content` for plain markers when Markdown escapes them. A local binding is not proof of remote access.
 5. Set `github.status_map` only after discovering the list's exact statuses; leave it empty if unknown. In local-helper mode set `routing.cup_profile` for the correct teammate account, or set `routing.runtime` to `rest-mcp` if that free local MCP is installed. Secrets belong in personal tool authentication/environment, never project JSON.
 6. **Full-helper:** select the working task with `cu-work ... focus --task ID` after local authentication. **OAuth host-agent:** identify the exact active task explicitly in the session and reverify its scope on each write; there is no helper focus state or durable journal. All later subtasks, updates, comments, and PRs use the approved task or an explicitly verified descendant/root.

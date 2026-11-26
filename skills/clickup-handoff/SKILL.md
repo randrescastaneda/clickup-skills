@@ -1,6 +1,8 @@
 ---
 name: clickup-handoff
 description: Resume a bound ClickUp project, review operation receipts, reconcile uncertain updates, and prepare a concise task handoff. Use at session start/end, after a failed update, or when handing work to a teammate or another coding agent.
+license: MIT
+compatibility: Requires the official ClickUp MCP authorized in the agent, or the optional cu-work local helper; GitHub through gh or an approved hosted connection.
 ---
 
 # Resume or hand off work
@@ -12,7 +14,7 @@ across authorized repositories and verify each project target; no per-repository
 token is required for `gh`. Strict **remote-only** permits hosted connections
 only and forbids `gh`. Missing or banned selected tools mean STOP, not fallback.
 Never use `cup`, `cu-work` or a bridge for hosted ClickUp. Follow the
-[host guard protocol](../clickup-github/references/official-mcp-issue-first.md)
+[host guard protocol](../clickup-github/references/official-mcp-issue-first.md) (in the sibling skill `clickup-github`, file `references/official-mcp-issue-first.md`)
 before hosted writes; these are agent checks outside helper receipts/locks/gates.
 Local ClickUp helper commands below apply only in explicit **local-helper** mode.
 
