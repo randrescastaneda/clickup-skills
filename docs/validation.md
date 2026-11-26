@@ -15,9 +15,11 @@ remains Kilo VS Code 7.8.18 on macOS (hosted ClickUp + `gh`, 5 November 2026).
 | Native MCP commands (`claude mcp add`, `codex mcp add`) | Syntax from vendor documentation | from vendor documentation, untested |
 | E. npx | Unchanged | as before |
 
-The offline suite has 146 tests at this revision. Generated JSON is now written with LF on
-every platform, because the staleness check compares bytes; that fix was simulated, and the
-first Windows CI run is its real test.
+The offline suite has 147 tests and passes in CI on Linux, macOS and Windows (commit
+`3393e06`). The first Windows runs exposed three platform differences, all fixed: generated
+JSON is written with LF everywhere, manifest entries are sorted by string instead of by path
+(Windows compares paths case-insensitively), and closed input at the client chooser is treated
+as no terminal (Windows reports the null device as a terminal).
 
 ## Independent backends — 5 November 2026
 
