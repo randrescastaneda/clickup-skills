@@ -9,7 +9,7 @@ Start with the actual agent session and working repository. Authentication in an
 
 | Symptom | What to check / ask the agent |
 | --- | --- |
-| `cu-work` is missing | **Normal with default hosted ClickUp:** use official hosted ClickUp MCP and the selected GitHub backend (`gh` by default); stop if unavailable. Only `onboard --mode local-helper` installs the persistent local helper; that mode exposes `clickup_work` and the managed `npx --yes github:randrescastaneda/clickup-skills work` proxy. |
+| `cu-work` is missing | **Normal with default hosted ClickUp:** use official hosted ClickUp MCP and the selected GitHub backend (`gh` by default); stop if unavailable. Only `onboard --mode local-helper` installs the persistent local helper; that mode exposes `clickup_work` and writes `cu-work` launchers to `~/.local/share/clickup-skills/bin` (or `CLICKUP_SKILLS_HOME/bin`); add that folder to PATH. |
 | The plugin installed but tasks cannot be read | Hosted ClickUp: check **this agent's** `clickup_official` browser authorization and its Workspace/List read permission. Local-helper mode: check separate `cup` token authentication and project binding. |
 | Skills are not discovered | Use the actual agent’s discovery path, reload the session, and add the project instruction; avoid duplicate copies |
 | MCP config is rejected | Choose the correct renderer: VS Code, Copilot, Codex, Kilo and Posit use different shapes |

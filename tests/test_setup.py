@@ -523,6 +523,23 @@ class PackagedInstallTests(unittest.TestCase):
                              env=self.env, capture_output=True, text=True, check=True)
         self.assertIn("9.0.0-test", cup.stdout)
 
+    def test_cu_work_launcher_follows_the_current_runtime(self):
+        launcher = self.managed / "bin" / ("cu-work.cmd" if os.name == "nt" else "cu-work")
+        result = self.run_setup()
+        self.assertIn(str(self.managed / "bin"), result.stdout)
+        first = Path(json.loads((self.managed / "installation.json").read_text())["runtime"])
+        self.assertIn(str(first), launcher.read_text(encoding="utf-8"))
+        self.assertTrue((self.managed / "bin/cu-work.cmd").is_file())
+        if os.name != "nt":
+            self.assertTrue(os.access(launcher, os.X_OK))
+        help_text = subprocess.run([str(launcher), "--help"], env=self.env, capture_output=True, text=True, check=True)
+        self.assertIn("task-scoped", help_text.stdout)
+        self.run_setup("update")
+        second = Path(json.loads((self.managed / "installation.json").read_text())["runtime"])
+        self.assertNotEqual(first, second)
+        self.assertIn(str(second), launcher.read_text(encoding="utf-8"))
+        self.assertNotIn(str(first), launcher.read_text(encoding="utf-8"))
+
     def test_skip_skills_preserves_external_installation(self):
         skill = self.project / '.kilo/skills/clickup-route/SKILL.md'
         skill.parent.mkdir(parents=True)
