@@ -33,6 +33,10 @@ def put(path, value):
     dest.write_bytes((json.dumps(value, indent=2) + "\n").encode("utf-8"))  # LF on every platform
 
 
+# How each native command was checked; anything not listed comes from vendor documentation only.
+NATIVE_COMMAND_STATUS = {"claude": "run once by an agent with Claude Code 2.1.332 on macOS, 26 November 2026"}
+
+
 def write(path, text, source=None):
     dest = ROOT / path
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -55,7 +59,8 @@ def client_section():
         language = "toml" if client == "codex" else "json"
         lines += ["", f"**{label}**", ""]
         if command:
-            lines += ["Native command (from vendor documentation, untested here):", "", "```bash", command, "```", "",
+            lines += ["Native command (" + NATIVE_COMMAND_STATUS.get(client, "from vendor documentation, untested here") + "):",
+                      "", "```bash", command, "```", "",
                       "Or add this to the settings file:", ""]
         else:
             lines += ["Add this to the settings file:", ""]

@@ -31,7 +31,11 @@ The route decides how the files arrive. The [selection](#choose-clickup-and-gith
 | Claude Code | **D. The client's plugin manager** | `claude plugin marketplace add randrescastaneda/clickup-skills` |
 | Node 22+ and Python 3.11+ | **E. npx** | `npx --yes github:randrescastaneda/clickup-skills onboard --client CLIENT` |
 
-`CLIENT` is `kilo`, `codex`, `claude`, `copilot` or `vscode` (VS Code Copilot Chat, which also needs `--project-dir /absolute/path/to/project`). Use one route per machine: two installers must never manage the same skill folder.
+`CLIENT` is `kilo`, `codex`, `claude`, `copilot` or `vscode` (VS Code Copilot Chat, which also needs `--project-dir /absolute/path/to/project`).
+
+**One installation covers one agent.** Each agent reads its own skills folder and settings file, so install again for every agent you use, changing only `CLIENT`. There is no all-agents option. Your `gh` sign-in is shared by all of them; the ClickUp authorization is approved once inside each agent.
+
+**Warning: one method per agent.** Do not install the skills for the same agent with two methods (for example the npx installer and the Claude Code plugin, or `gh skill` and the Python installer), or at both user and project scope: every skill then appears twice. If the skills are already installed for that agent, upgrade them with the method that installed them, or remove that copy before installing with another method. Some agents also read other agents' skill folders, so after adding a second agent, check that each skill appears once in both.
 
 ### A. Agent-run manual install
 
@@ -60,7 +64,7 @@ Needs `gh` 2.90 or later. The `gh skill` command group is a preview and may chan
 
 Add `--pin TAG` once a release tag exists. For Kilo and Codex pass `--dir`: `gh` 2.95 writes `--agent kilo` to `~/.kilocode/skills` and `--agent codex` to `~/.codex/skills`, not the folders this project uses. Update with `gh skill update --all`, adding the same `--dir` for Kilo and Codex. `gh skill` rewrites each `SKILL.md` frontmatter, so these copies belong to `gh`.
 
-Then register the official ClickUp MCP: `python3 scripts/setup.py onboard --client CLIENT --skip-skills` from a clone, or step 7 of the [install runbook](install-runbook.html) (the client's own command or the settings snippet).
+Then register the official ClickUp MCP: `python3 scripts/setup.py onboard --client CLIENT --skip-skills` from a clone, or step 8 of the [install runbook](install-runbook.html) (the client's own command or the settings snippet).
 
 ### C. Python only
 
@@ -115,7 +119,7 @@ The command installs from `main`, the repository's default branch. The installer
 | GitHub Copilot **CLI** | `onboard --client copilot` |
 | GitHub Copilot **Chat inside VS Code**, Agent mode | `onboard --client vscode --project-dir /absolute/path/to/project` |
 
-For every row, the full command begins with `npx --yes github:randrescastaneda/clickup-skills`. **Do not run all five. Choose only the agent you use.** For a VS Code extension that *is* Kilo, Codex, or Claude Code, use that agent's option—not `vscode`. The working project must already exist when using `--project-dir`.
+For every row, the full command begins with `npx --yes github:randrescastaneda/clickup-skills`. **Run it once for each agent you actually use, not for all five.** For a VS Code extension that *is* Kilo, Codex, or Claude Code, use that agent's option—not `vscode`. The working project must already exist when using `--project-dir`.
 
 [Detailed instructions for each agent](clients.html), including which settings file changes, OAuth steps and verification commands.
 
