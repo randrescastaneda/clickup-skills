@@ -60,7 +60,9 @@ Routes C and E take the flags from section 2 and `--project-dir /absolute/projec
 
 ## 4. Verify after any route
 
-With Python and the plugin source, `python3 scripts/setup.py status --client CLIENT [--project-dir DIR]` prints the skills' states, the settings file, the official-server names, the recorded selection and the `gh` sign-in, and changes nothing.
+With Python and the plugin source, `python3 scripts/setup.py status --client CLIENT [--project-dir DIR]` prints the skills' states, the settings file, the official-server names, the recorded selection and the `gh` sign-in, and changes nothing. The source is a clone or ZIP of the installed release or a later one; installers before version 0.2.0 have no `status` command. For a skill without an installer receipt, `unmanaged-identical` means it matches that source and `unmanaged-different` means another version or local edits.
+
+Route A deletes its source after installing, so no installer stays on the machine. That is expected, not a missing file. To check a route A copy, get the source again and compare hashes (steps 4 and 7 of [`references/manual-install.md`](references/manual-install.md)), or run `status` from it. Never run npx or another installer to check or repair a route A copy: `onboard` would put a second method on the same folders.
 
 1. Reload the client. On Kilo VS Code, use **Developer: Reload Window** and a fresh task, then compare the skill loader's bodies with the installed files: the observed 7.8.18 backend cached old bodies despite a new task. Do not delete caches or copies speculatively.
 2. Discover the six skills and the real MCP tool schemas.
