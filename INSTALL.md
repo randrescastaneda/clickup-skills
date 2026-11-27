@@ -213,7 +213,7 @@ Add this to the settings file:
 The read-only check needs a reloaded client, so it cannot run in this session. Finish here:
 
 1. Report: client, scope, selection (hosted with `gh`, hosted with hosted GitHub, or remote-only), version or commit (say if it was `main`), folders copied or skipped, the result of step 7, settings file and backup path, the server name, whether you added the server entry, the `gh` state, and what the user still has to do.
-2. Delete the temporary source folder.
+2. Delete the temporary source folder. No installer from this route stays on the machine; that is expected, and step 11 needs none.
 3. Ask the user to reload the client and approve the ClickUp browser authorization:
 
 | Client | Reload, then authorize |
@@ -240,6 +240,8 @@ ClickUp keeps an allowlist of vetted MCP clients. If the authorization is refuse
 ## 11. Verify read-only, in the new session
 
 After the reload and the authorization, use the `clickup-setup` skill to check, read-only: the six skills are discovered, each exactly once; the ClickUp server is present once and authorized; a read of the intended Workspace, List and task works; the selected GitHub backend can read the intended repository. Ask the user for those names if they were not given. Never write during verification.
+
+To check the installed files again later, repeat steps 4 and 7 for the installed version. Never run npx or another installer to check or repair this installation: its `onboard` command would put a second method on the same folders. If the user agrees to run repository code, `python3 scripts/setup.py status --client CLIENT` from that source also reports each skill: `unmanaged-identical` matches the source, and `unmanaged-different` means another version or local edits (step 12 finds which).
 
 ## 12. Update and uninstall
 
